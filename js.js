@@ -4,15 +4,9 @@ let formattedDuration = 0;
 
 // 读取判定线JSON
 function ChartFiles(files) {
-    // 获取文件
     var file = files[0];
-    
-    // 创建FileReader对象
     var reader = new FileReader();
-    
-    // 文件读取完毕
     reader.onload = function(e) {
-        // 解析JSON
         try {
             var json = JSON.parse(e.target.result);
             // console.log(json.judgeLineList); 
@@ -26,7 +20,6 @@ function ChartFiles(files) {
         }
     };
     
-    // 读取文件内容
     reader.readAsText(file);
 }
 function bgm(files) {
@@ -53,7 +46,7 @@ function LinearInterpolation(s, e, sT, eT, NowTime) {
 
 class Lines {
     constructor() {
-        this.linesData = {}; // 创建一个对象来存储每条线的数据
+        this.linesData = {}; 
     }
 
     CreateLine() {
