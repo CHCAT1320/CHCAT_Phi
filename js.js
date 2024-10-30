@@ -83,21 +83,21 @@ class Lines {
         for (let i = 0; i < lineNumber; i++) {
             let lineData = this.linesData[i];
             if (formattedDuration > BpmToTime(lineData.lineMoveEventsValueList[1], lineData.bpm)) {
-                lineData.LineX = (lineData.lineMoveEventsValueList[3] - 0.5) * 720;
-                lineData.LineY = (lineData.lineMoveEventsValueList[5] - 0.5) * 540;
+                lineData.LineX =0- (lineData.lineMoveEventsValueList[3] - 0.5) * 720;
+                lineData.LineY =0- (lineData.lineMoveEventsValueList[5] - 0.5) * 540;
                 lineData.LineMoveNumber += 1;
                 lineData.lineMoveEventsValueList = Object.values(lineData.lineMoveEventsList[lineData.LineMoveNumber]) || [];
                 //lineData.element.style.transform = 'translate(' + lineData.LineX + 'px,' + lineData.LineY + 'px)';
                 //console.log(lineData.LineX + "?" + lineData.LineY)
             } else if (formattedDuration > BpmToTime(lineData.lineMoveEventsValueList[0], lineData.bpm)) {
-                lineData.LineX = LinearInterpolation(
+                lineData.LineX = 0-LinearInterpolation(
                     (lineData.lineMoveEventsValueList[2] - 0.5) * 720,
                     (lineData.lineMoveEventsValueList[3] - 0.5) * 720,
                     BpmToTime(lineData.lineMoveEventsValueList[0], lineData.bpm),
                     BpmToTime(lineData.lineMoveEventsValueList[1], lineData.bpm),
                     formattedDuration
                 );
-                lineData.LineY = LinearInterpolation(
+                lineData.LineY =0- LinearInterpolation(
                     (lineData.lineMoveEventsValueList[4] - 0.5) * 540,
                     (lineData.lineMoveEventsValueList[5] - 0.5) * 540,
                     BpmToTime(lineData.lineMoveEventsValueList[0], lineData.bpm),
