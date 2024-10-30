@@ -116,13 +116,13 @@ class Lines {
             //console.log(lineData.lineRotateEventsList);
             //if (lineData.lineRotateEventsList && lineData.lineRotateEventsList.length > lineData.LineRotateumber) {
                 if (formattedDuration > BpmToTime(lineData.lineRotateEventsValueList[1], lineData.bpm)) {
-                    lineData.LineR = lineData.lineRotateEventsValueList[3];
+                    lineData.LineR =0- lineData.lineRotateEventsValueList[3];
                     lineData.LineRotateumber += 1;
                     lineData.lineRotateEventsValueList = Object.values(lineData.lineRotateEventsList[lineData.LineRotateumber]) || [];
                     //lineData.element.style.transform = 'rotate(' + lineData.LineR + 'deg)';
                     //console.log('Rotate to ' + lineData.LineR + ' degrees');
                 } else if (formattedDuration > BpmToTime(lineData.lineRotateEventsValueList[0], lineData.bpm)) {
-                    lineData.LineR = LinearInterpolation(
+                    lineData.LineR =0- LinearInterpolation(
                         lineData.lineRotateEventsValueList[2],
                         lineData.lineRotateEventsValueList[3],
                         BpmToTime(lineData.lineRotateEventsValueList[0], lineData.bpm),
