@@ -5,11 +5,13 @@ var ctx = canvas.getContext("2d");
 // 将原点移动到画布的中心
 ctx.translate(canvas.width / 2, canvas.height / 2);
 
+
 // 定义全局变量及列表
 let time = 0
 let AllLineInfoList = []
 let AllNoteInfoList = []
 let AllLineXYRS = {}
+let HtiList = []
 
 // 读取谱面文件函数
 function ChartFiles(files) {
@@ -163,10 +165,10 @@ class Line {
         for (let i = 0; i < AllLineInfoList.length; i++) {
             let lineInfo = this.lineInfo[i];
             if (time > BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].endTime, lineInfo.bpm)) {
-                lineInfo.LineR = 0-lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].end;
+                lineInfo.LineR = -lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].end;
                 lineInfo.LineRotateNumber += 1
             } else if (time > BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].startTime, lineInfo.bpm)) {
-                lineInfo.LineR = 0-LinearInterpolation(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].start,
+                lineInfo.LineR = -LinearInterpolation(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].start,
                     lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].end,
                     BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].startTime, lineInfo.bpm),
                     BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].endTime, lineInfo.bpm),
@@ -199,7 +201,13 @@ class Line {
             if (lineInfo.LineSpeedNumber <= lineInfo.lineSpeedEventList.length){
                 if (time > BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].endTime, lineInfo.bpm)){
                     lineInfo.LineS = lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].value;
+                    if (lineInfo.LineSpeedNumber > 0){
+                        lineInfo.SpeedFP = lineInfo.SpeedFP0 + lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber - 1].value * (BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm) - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber - 1].startTime , lineInfo.bpm))
+                    }else {
+                        lineInfo.SpeedFP = 0
+                    }
                     lineInfo.SpeedFP0 = lineInfo.SpeedFP;
+                    lineInfo.LineFP = lineInfo.SpeedFP + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
                     // console.log(lineInfo.LineS)
                     lineInfo.LineSpeedNumber += 1;
                 }else if (time > BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime, lineInfo.bpm)){
@@ -209,8 +217,13 @@ class Line {
                         lineInfo.SpeedFP = 0
                     }
                     lineInfo.LineS = lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].value;
+                    if ("floorPosition" in lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber]){
+                        lineInfo.LineFP = lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].floorPosition + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
+                    }else {
+                        lineInfo.LineFP = lineInfo.SpeedFP + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
+                    }
                     // console.log(lineInfo.LineS)
-                    lineInfo.LineFP = lineInfo.SpeedFP + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
+                    // lineInfo.LineFP = lineInfo.SpeedFP + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
                 }
             }
             // console.log(lineInfo.LineFP)
@@ -264,69 +277,121 @@ class Line {
     }
 }
 
+var tapImg = document.getElementById("tapImg")
+var flickImg = document.getElementById("flickImg")
+var dragImg = document.getElementById("dragImg")
+
+
 class Note {
 
     drawNote() {
         for (var i = 0; i < AllNoteInfoList.length; i++) {
             if (time > AllNoteInfoList[i].time){
                 AllNoteInfoList.splice(i ,1)
-                if(AllNoteInfoList[i].type === 1){
-                    console.log("tap")
-                }else if(AllNoteInfoList[i].type === 2){
-                    console.log("drag")
-                }else if(AllNoteInfoList[i].type === 3){
-                    console.log("hold")
-                }else{
-                    console.log("flick")
-                }
+                // HtiList.push(
+                //     {
+                //         Y: AllLineXYRS[AllNoteInfoList[i].lineIndex].y ,
+                //         X: AllLineXYRS[AllNoteInfoList[i].lineIndex].x ,
+                //         X1: AllNoteInfoList[i].positionX,
+                //     }
+                // )
+                // for(var a = 0; a < 30 ; a++){
+                //     ctx.beginPath();
+                //     ctx.arc(x + Math.random() * 20 - 10, y + Math.random() * 20 - 10, 5, 0, 2 * Math.PI);
+                //     ctx.fillStyle = "rgba(255,0,0,0.5)";
+                //     ctx.fill();
+                //     ctx.closePath();
+                // }
+                // if(AllNoteInfoList[i].type === 1){
+                //     console.log("tap")
+                // }else if(AllNoteInfoList[i].type === 2){
+                //     console.log("drag")
+                // }else if(AllNoteInfoList[i].type === 3){
+                //     console.log("hold")
+                // }else{
+                //     console.log("flick")
+                // }
                 // var tapA = document.getElementById('tapA');
                 // // 使用Howler.js
                 // var sound = new Howl({
                 //     src: [tapA.src]
                 // }).play();
             }else{
-                ctx.lineWidth = 20;
-                if(AllNoteInfoList[i].type === 2){
-                    ctx.strokeStyle = "rgba(255,255,190,1)";
-                }else if(AllNoteInfoList[i].type === 4){
-                    ctx.strokeStyle = "rgba(255,0,0,1)";
-                }else{
-                    ctx.strokeStyle = "rgba(85,176,255,1)";
-                }
+                // ctx.lineWidth = 20;
+                
                 if (AllNoteInfoList[i].type === 3){
-                    var fp = -1*0.6 * canvas.height * 1 * (AllNoteInfoList[i].floorPosition - AllLineXYRS[AllNoteInfoList[i].lineIndex].fp)
+                    var fp = 0.6 * canvas.height * 1 * (AllNoteInfoList[i].floorPosition - AllLineXYRS[AllNoteInfoList[i].lineIndex].fp)
                 }else {
-                    var fp = -1*0.6 * canvas.height * AllNoteInfoList[i].speed * (AllNoteInfoList[i].floorPosition - AllLineXYRS[AllNoteInfoList[i].lineIndex].fp)
+                    var fp = 0.6 * canvas.height * AllNoteInfoList[i].speed * (AllNoteInfoList[i].floorPosition - AllLineXYRS[AllNoteInfoList[i].lineIndex].fp)
                 }
                 if (AllNoteInfoList[i].r != 1){
-                    fp = fp * -1
+                    fp = -1*fp
                 }
-                ctx.beginPath()
-                // ctx.moveTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 40 * Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI), AllLineXYRS[AllNoteInfoList[i].lineIndex].y + fp + 40 * Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-                // ctx.lineTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 40 * Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI), AllLineXYRS[AllNoteInfoList[i].lineIndex].y + fp + 40 * Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI))
-                ctx.moveTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 
-                    (40 * 
-                    Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
-                    -1*fp * 
-                    Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI)), 
-                    AllLineXYRS[AllNoteInfoList[i].lineIndex].y + 
-                    (40 * 
-                    Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) - 
-                    -1*fp * 
-                    Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-                )
-                ctx.lineTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 
-                    (40 * 
-                    Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI) + 
-                    fp * 
-                    Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI)), 
-                    AllLineXYRS[AllNoteInfoList[i].lineIndex].y + 
-                    (40 * 
-                    Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI) - 
-                    fp * 
-                    Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI))
-                )
-                ctx.stroke()
+
+                var x = AllLineXYRS[AllNoteInfoList[i].lineIndex].x +
+                        (AllNoteInfoList[i].positionX * 
+                        Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
+                        0 * 
+                        Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
+                var y = AllLineXYRS[AllNoteInfoList[i].lineIndex].y +
+                        (AllNoteInfoList[i].positionX * 
+                        Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) -
+                        0* 
+                        Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
+
+                if(AllNoteInfoList[i].type === 2){
+                    var img = dragImg
+                }else if(AllNoteInfoList[i].type === 4){
+                    var img = flickImg
+                }else{
+                    var img = tapImg
+                    
+                }
+                ctx.save()
+                ctx.translate(AllLineXYRS[AllNoteInfoList[i].lineIndex].x,AllLineXYRS[AllNoteInfoList[i].lineIndex].y)
+                ctx.rotate(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI)
+                // ctx.translate(canvas.width / 400, canvas.height / 400);
+                ctx.drawImage(img, AllNoteInfoList[i].positionX - 45, -1*fp, 80, 10);
+                ctx.restore()
+
+                // var x = AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX -
+                //         (40 * 
+                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
+                //         fp * 
+                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
+                // var y = AllLineXYRS[AllNoteInfoList[i].lineIndex].y -
+                //         (40 * 
+                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) +
+                //         fp * 
+                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
+
+                // var x1 = x + 
+                //         (80 * 
+                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
+                //         0 * 
+                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
+                // var y1 = y + 
+                //         (80 * 
+                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
+                //         0 *  
+                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
+                // ctx.beginPath()
+                // // ctx.moveTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 40 * Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI), AllLineXYRS[AllNoteInfoList[i].lineIndex].y + fp + 40 * Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
+                // // ctx.lineTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 40 * Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI), AllLineXYRS[AllNoteInfoList[i].lineIndex].y + fp + 40 * Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI))
+                // ctx.moveTo(x, y)
+                // ctx.lineTo(x1, y1)
+                // // ctx.lineTo(x + 
+                // //     (80 * 
+                // //     Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI) + 
+                // //     0 * 
+                // //     Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI)), 
+                // //     y + 
+                // //     (80 * 
+                // //     Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI) + 
+                // //     0 * 
+                // //     Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI))
+                // // )
+                // ctx.stroke()
             }
             
         }
@@ -352,34 +417,18 @@ function StartPlay() {
         let notesInstance = new Note();
         // 创建线
         linesInstance.CreateLine();
-        // 如果已经有一个定时器在运行，先清除它
-        if (intervalId !== null) {
-            clearInterval(intervalId);
-        }
 
 
         linesInstance.drawLine();
-        // 调用帧率检测函数
-        // updateFPS()
-
+        function play (){
+            
+        }
         // 使用setInterval定期检查audio的currentTime
         intervalId = setInterval(function () {
             // 检查audio是否已经开始播放
             if (audio.currentTime > 0) {
                 // 谱面时间计算变量
                 let startTime = performance.now();
-                // linesInstance.GetLineMove();
-                // linesInstance.GetLineRotate();
-                // linesInstance.GetLineDisappear();
-
-                // ctx.clearRect(0 - (canvas.width / 2), 0 - (canvas.height / 2), canvas.width, canvas.height);
-                // // 绘制线
-                // linesInstance.drawLine();
-                // // 计算谱面现在时间
-                // endTime = performance.now();
-                // let duration = endTime - startTime;
-                // time = (duration / 1000).toFixed(3);
-                // document.getElementById("chartTime").innerHTML = `谱面时间：${time}s`;
 
                 // 一旦开始播放，就不再需要这个检查，可以清除这个setInterval
                 clearInterval(intervalId);
