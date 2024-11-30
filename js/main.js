@@ -13,6 +13,40 @@ let AllNoteInfoList = []
 let AllLineXYRS = {}
 let HtiList = []
 
+var RDpopoC = 0
+var RDpopoC = 0;
+function ReadFiles() {
+    var popo = document.getElementById('readFilesPopo');
+    var shadow = document.getElementById("shadow")
+    if (shadow.style.opacity ===0){
+        shadow.style.display = "none"
+    }else{
+        shadow.style.display = "block"
+    }
+    if (popo.style.opacity ===0){
+        popo.style.display = "none"
+    }else{
+        popo.style.display = "block"
+    }
+    if (RDpopoC === 0) {
+        // 开始动画，并在动画结束后设置透明度为1
+        shadow.style.animation = "size 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
+        popo.style.animation = "size 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
+        shadow.style.opacity = "1"; // 使元素变为半透明
+        popo.style.opacity = "1"; // 使元素变为可见
+
+        RDpopoC = 1;
+    } else {
+        // 开始动画，并在动画结束后设置透明度为0
+        shadow.style.animation = "size0 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
+        popo.style.animation = "size0 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
+        shadow.style.opacity = "0"; // 使元素变为完全透明
+        popo.style.opacity = "0"; // 使元素变为完全透明
+        RDpopoC = 0;
+    }
+}
+
+
 // 读取谱面文件函数
 function ChartFiles(files) {
     // 获取文件
@@ -38,7 +72,7 @@ function ChartFiles(files) {
     reader.readAsText(file);
 }
 
-// 读取谱面文件函数
+// 读取音乐文件函数
 function BgmFiles(files) {
     // 获取文件
     var file = files[0];
@@ -51,6 +85,34 @@ function BgmFiles(files) {
             audio.src = URL.createObjectURL(file);
         }catch(error){
             console.error("喵！读取音乐文件出错",error)
+        }
+    }
+    // 调用readAsText并传入文件内容
+    reader.readAsText(file);
+}
+
+// 读取曲绘文件函数
+function BGFiles(files) {
+    // 获取文件
+    var file = files[0];
+    // 创建FileReader对象
+    var reader = new FileReader();
+    // 解析文件数据
+    reader.onload = function(e) {
+        try{
+            var BG = document.getElementById("BG")
+            BG.src = URL.createObjectURL(file);
+            BG.style.filter = "blur(5px)"
+            BG.onload = function() {
+                // 绘制背景图像
+                ctx.drawImage(BG, 0 - canvas.width/2, 0 - canvas.height/2, canvas.width, canvas.height);
+            }
+            // ctx.drawImage(BG,100,100,100,100)
+            // canvas.style.backgroundImage = "url('"+URL.createObjectURL(file);+"')"
+            // canvas.style.backgroundSize = "cover"
+            // canvas.style.filter = "blur(5px)";
+        }catch(error){
+            console.error("喵！读取曲绘文件出错",error)
         }
     }
     // 调用readAsText并传入文件内容
@@ -287,21 +349,18 @@ class Note {
     drawNote() {
         for (var i = 0; i < AllNoteInfoList.length; i++) {
             if (time > AllNoteInfoList[i].time){
+                
+                HtiList.push(
+                    {
+                        Y: AllLineXYRS[AllNoteInfoList[i].lineIndex].y ,
+                        X: AllLineXYRS[AllNoteInfoList[i].lineIndex].x ,
+                        R: AllLineXYRS[AllNoteInfoList[i].lineIndex].r ,
+                        X1: AllNoteInfoList[i].positionX,
+                    }
+                )
                 AllNoteInfoList.splice(i ,1)
-                // HtiList.push(
-                //     {
-                //         Y: AllLineXYRS[AllNoteInfoList[i].lineIndex].y ,
-                //         X: AllLineXYRS[AllNoteInfoList[i].lineIndex].x ,
-                //         X1: AllNoteInfoList[i].positionX,
-                //     }
-                // )
-                // for(var a = 0; a < 30 ; a++){
-                //     ctx.beginPath();
-                //     ctx.arc(x + Math.random() * 20 - 10, y + Math.random() * 20 - 10, 5, 0, 2 * Math.PI);
-                //     ctx.fillStyle = "rgba(255,0,0,0.5)";
-                //     ctx.fill();
-                //     ctx.closePath();
-                // }
+                // HtiList.splice(1, 1)
+
                 // if(AllNoteInfoList[i].type === 1){
                 //     console.log("tap")
                 // }else if(AllNoteInfoList[i].type === 2){
@@ -351,7 +410,7 @@ class Note {
                 ctx.translate(AllLineXYRS[AllNoteInfoList[i].lineIndex].x,AllLineXYRS[AllNoteInfoList[i].lineIndex].y)
                 ctx.rotate(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI)
                 // ctx.translate(canvas.width / 400, canvas.height / 400);
-                ctx.drawImage(img, AllNoteInfoList[i].positionX - 45, -1*fp, 80, 10);
+                ctx.drawImage(img, AllNoteInfoList[i].positionX - 45, -1*fp, 100, 100/img.width*img.height);
                 ctx.restore()
 
                 // var x = AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX -
@@ -397,6 +456,28 @@ class Note {
         }
     }
 }
+
+function drawHit(){
+//     if(HtiList.length != 0){
+//         let timeTemp = time
+//         if(time < timeTemp+1){
+//             ctx.save();
+//             ctx.translate(HtiList[0].X,HtiList[0].Y)
+//             ctx.rotate(HtiList[0].R / 180 * Math.PI)
+//             ctx.beginPath();
+//             ctx.arc(HtiList[0].X1,0, 20, 0, 2 * Math.PI);
+//             ctx.fillStyle = "rgba(255,0,0,0.5)";
+//             ctx.fill();
+//             ctx.closePath();
+//             ctx.restore()
+
+//         }else if(time>timeTemp+1){
+//             HtiList.splice(0, 1)
+//             console.log(123)
+//         }
+        
+//     }
+}
 // 谱面时间计算变量
 let startTime = performance.now();
 let endTime = 0;
@@ -420,9 +501,6 @@ function StartPlay() {
 
 
         linesInstance.drawLine();
-        function play (){
-            
-        }
         // 使用setInterval定期检查audio的currentTime
         intervalId = setInterval(function () {
             // 检查audio是否已经开始播放
@@ -433,6 +511,7 @@ function StartPlay() {
                 // 一旦开始播放，就不再需要这个检查，可以清除这个setInterval
                 clearInterval(intervalId);
                 intervalId = setInterval(function () {
+                    
                     // // 谱面时间计算变量
                     // let startTime = performance.now();
                     linesInstance.GetLineMove();
@@ -442,8 +521,13 @@ function StartPlay() {
 
                     ctx.clearRect(0 - (canvas.width / 2), 0 - (canvas.height / 2), canvas.width, canvas.height);
                     // 绘制线
+                    var BG = document.getElementById("BG")
+                    if(BG.src !="" ){
+                        ctx.drawImage(BG, 0 - canvas.width/2, 0 - canvas.height/2, canvas.width, canvas.height);
+                    }
                     notesInstance.drawNote()
                     linesInstance.drawLine();
+                    drawHit()
                     
                     
                     // 计算谱面现在时间
