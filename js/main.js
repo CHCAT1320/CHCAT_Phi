@@ -27,15 +27,15 @@ noteImg[3].src = "img/hold.png"
 noteImg[4] = new Image()
 noteImg[4].src = "img/flick.png"
 noteImg[5] = new Image()
-noteImg[5].src = "img/HoldHead.png"
+noteImg[5].src = "img/holdHead.png"
 noteImg[6] = new Image()
-noteImg[6].src = "img/HoldEnd.png"
+noteImg[6].src = "img/holdEnd.png"
 var combo = 0
 var comboText = "CATPLAY"
 var score = 0
 var bg
 var pauseImg = new Image()
-pauseImg.src = "img/Pause.png"
+pauseImg.src = "img/pause.png"
 var timerLineImg = new Image()
 timerLineImg.src = "img/timerLine.png"
 
