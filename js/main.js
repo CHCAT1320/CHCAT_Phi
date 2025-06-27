@@ -1,558 +1,683 @@
-// 获取canvas上下文
-var canvas = document.getElementById("canvas");
-var ctx = canvas.getContext("2d");
+// 获取 canvas 元素
+const canvas = document.getElementById("canvas")
+// 获取 canvas 上下文
+const ctx = canvas.getContext("2d")
+// 设置 canvas 宽高
+canvas.width = 720
+canvas.height = 540
+// 改为原点在中心
+ctx.translate(canvas.width / 2, canvas.height / 2)
 
-// 将原点移动到画布的中心
-ctx.translate(canvas.width / 2, canvas.height / 2);
+// 全局变量/常量
+var chart
+const audio = document.getElementById("audio")
+let frameCount = 0;
+let lastTime = 0;
+var linesI = []
+var hitI = []
+var hitImg = []
+var noteI = []
+var noteImg = []
+noteImg[1] = new Image()
+noteImg[1].src = "img/tap.png"
+noteImg[2] = new Image()
+noteImg[2].src = "img/drag.png"
+noteImg[3] = new Image()
+noteImg[3].src = "img/hold.png"
+noteImg[4] = new Image()
+noteImg[4].src = "img/flick.png"
+noteImg[5] = new Image()
+noteImg[5].src = "img/HoldHead.png"
+noteImg[6] = new Image()
+noteImg[6].src = "img/HoldEnd.png"
+var combo = 0
+var comboText = "CATPLAY"
+var score = 0
+var bg
+var pauseImg = new Image()
+pauseImg.src = "img/Pause.png"
+var timerLineImg = new Image()
+timerLineImg.src = "img/timerLine.png"
+
+// var hitAudio = []
+// hitAudio[1] = new Audio()
+// hitAudio[1].src = "audio/tap.mp3"
+// hitAudio[2] = new Audio()
+// hitAudio[2].src = "audio/drag.mp3"
+// hitAudio[3] = new Audio()
+// hitAudio[3].src = "audio/tap.mp3"
+// hitAudio[4] = new Audio()
+// hitAudio[4].src = "audio/flick.mp3"
+// var tapHitAudio = new Audio()
+// tapHitAudio.src = "audio/tap.mp3"
+// var dragHitAudio = new Audio()
+// dragHitAudio.src = "audio/drag.mp3"
+// var flickHitAudio = new Audio()
+// flickHitAudio.src = "audio/flick.mp3"
 
 
-// 定义全局变量及列表
-let time = 0
-let AllLineInfoList = []
-let AllNoteInfoList = []
-let AllLineXYRS = {}
-let HtiList = []
+// 初始化打击特效
+function hitImgInit() {
+  const img = new Image();
+  
+  img.onload = function () {
+    const cvs = document.createElement("canvas");
+    const ctx = cvs.getContext("2d");
+    
+    cvs.width = img.width;
+    cvs.height = img.height;
 
-var RDpopoC = 0
-var RDpopoC = 0;
-function ReadFiles() {
-    var popo = document.getElementById('readFilesPopo');
-    var shadow = document.getElementById("shadow")
-    if (shadow.style.opacity ===0){
-        shadow.style.display = "none"
-    }else{
-        shadow.style.display = "block"
+    ctx.drawImage(img, 0, 0, img.width, img.height);
+
+    // 获取图像数据并应用金色效果
+    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+    applyGoldenEffect(imageData.data);
+
+    // 将修改后的图像数据放回画布
+    ctx.putImageData(imageData, 0, 0);
+
+    const frameWidth = 256;
+    const frameHeight = 256;
+    const columns = 6;
+    const rows = 5;
+    const totalFrames = columns * rows;
+
+    // 创建一个小画布用于绘制单个帧
+    const frameCvs = document.createElement("canvas");
+    const frameCtx = frameCvs.getContext("2d");
+    
+    frameCvs.width = frameWidth;
+    frameCvs.height = frameHeight;
+
+    for (let i = 0; i < totalFrames; i++) {
+      const a = i % columns;
+      const b = Math.floor(i / columns);
+      
+      // 绘制当前帧
+      frameCtx.clearRect(0, 0, frameCvs.width, frameCvs.height);
+      frameCtx.drawImage(
+        cvs, // 从修改后的画布中裁剪
+        a * frameWidth,
+        b * frameHeight,
+        frameWidth,
+        frameHeight,
+        0,
+        0,
+        frameWidth,
+        frameHeight
+      );
+
+      // 将当前帧的数据存入数组
+      const hitImgData = new Image();
+      hitImgData.src = frameCvs.toDataURL();
+      hitImg.push(hitImgData);
     }
-    if (popo.style.opacity ===0){
-        popo.style.display = "none"
-    }else{
-        popo.style.display = "block"
-    }
-    if (RDpopoC === 0) {
-        // 开始动画，并在动画结束后设置透明度为1
-        shadow.style.animation = "size 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
-        popo.style.animation = "size 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
-        shadow.style.opacity = "1"; // 使元素变为半透明
-        popo.style.opacity = "1"; // 使元素变为可见
 
-        RDpopoC = 1;
-    } else {
-        // 开始动画，并在动画结束后设置透明度为0
-        shadow.style.animation = "size0 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
-        popo.style.animation = "size0 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards";
-        shadow.style.opacity = "0"; // 使元素变为完全透明
-        popo.style.opacity = "0"; // 使元素变为完全透明
-        RDpopoC = 0;
-    }
+    console.log("所有帧已加载完成，总帧数：", hitImg.length);
+  };
+  
+  img.onerror = function () {
+    console.error("图像加载失败");
+  };
+  
+  img.src = "img/hit.png";
 }
 
+// 金色效果函数
+function applyGoldenEffect(data) {
+  const intensity = 3; // 金色强度
+  for (let i = 0; i < data.length; i += 4) {
+    const grayValue = data[i]; // 红色通道作为亮度基准
+    data[i] = Math.min(255, grayValue + intensity * 100);       // 红色增加
+    data[i + 1] = Math.min(255, grayValue + intensity * 80);    // 绿色增加
+    data[i + 2] = Math.max(0, grayValue - intensity * 20);      // 蓝色减少
+  }
+}
+// 调用打击特效切图
+hitImgInit();
 
-// 读取谱面文件函数
-function ChartFiles(files) {
-    // 获取文件
+// 解析谱面
+function readChart(files) {
     var file = files[0];
-    // 创建FileReader对象
     var reader = new FileReader();
-    // 解析文件数据
-    reader.onload = function(e) {
-        try{
+    reader.onload = function (e) {
+        try {
             var data = JSON.parse(e.target.result);
-            // 判断谱面文件类型
-            if("formatVersion"in data){
-                console.log("喵！官谱格式!")
-                ReadFormat(data)
-            } else{
-                console.error("喵！未知谱面格式")
+            console.log(data);
+            if ("formatVersion" in data) {
+                console.log("已知谱面格式formatVersion = " + data.formatVersion);
+                chart = data;
+            } else {
+                console.error("未知谱面格式");
             }
-        }catch(error){
-            console.error("喵！读取谱面文件出错",error)
+        } catch (error) {
+            console.log(error);
         }
-    }
-    // 调用readAsText并传入文件内容
+    };
     reader.readAsText(file);
 }
 
-// 读取音乐文件函数
-function BgmFiles(files) {
-    // 获取文件
+// 加载bgm
+function bgmFiles(files) {
     var file = files[0];
-    // 创建FileReader对象
     var reader = new FileReader();
-    // 解析文件数据
     reader.onload = function(e) {
-        try{
-            var audio = document.getElementById("bgm")
+        try {
+            console.log("音乐文件");
             audio.src = URL.createObjectURL(file);
-        }catch(error){
-            console.error("喵！读取音乐文件出错",error)
+        } catch(error) {
+            console.log(error);
         }
-    }
-    // 调用readAsText并传入文件内容
+    };
     reader.readAsText(file);
 }
 
-// 读取曲绘文件函数
-function BGFiles(files) {
-    // 获取文件
+// 加载曲绘
+function bgFiles(files) {
     var file = files[0];
-    // 创建FileReader对象
     var reader = new FileReader();
-    // 解析文件数据
     reader.onload = function(e) {
-        try{
-            var BG = document.getElementById("BG")
-            BG.src = URL.createObjectURL(file);
-            BG.style.filter = "blur(5px)"
-            BG.onload = function() {
-                // 绘制背景图像
-                ctx.drawImage(BG, 0 - canvas.width/2, 0 - canvas.height/2, canvas.width, canvas.height);
+        try {
+            console.log("背景文件");
+            bg = new Image();
+            bg.src = URL.createObjectURL(file);
+            bg.onload = function() {
+                console.log("背景加载完成");
+                // ctx.filter = 'blur(10px) brightness(0.5)'
+                // ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+                // const data = ctx.getImageData(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height)
+                // ctx.filter = 'none'
+                // ctx.putImageData(data, -canvas.width / 2, -canvas.height / 2)
+                // bg.scr = canvas.toDataURL()
+                // ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height)
+                const bgCvs = document.createElement("canvas");
+                const bgCtx = bgCvs.getContext("2d");
+                bgCvs.width = canvas.width;
+                bgCvs.height = canvas.height;
+                bgCtx.filter = 'blur(10px) brightness(0.5)';
+                bgCtx.drawImage(bg, 0, 0, bg.width, bg.height, 0, 0, canvas.width, canvas.height);
+                bg = bgCvs
+
             }
-            // ctx.drawImage(BG,100,100,100,100)
-            // canvas.style.backgroundImage = "url('"+URL.createObjectURL(file);+"')"
-            // canvas.style.backgroundSize = "cover"
-            // canvas.style.filter = "blur(5px)";
-        }catch(error){
-            console.error("喵！读取曲绘文件出错",error)
+        } catch(error) {
+            console.log(error);
         }
-    }
-    // 调用readAsText并传入文件内容
+    };
     reader.readAsText(file);
 }
 
-// 读取官谱
-function ReadFormat(json){
-    var json = json
-    AllLineInfoList = json.judgeLineList
-    console.log(json)
-    console.log(AllLineInfoList)
-    for(var i = 0 ; i < AllLineInfoList.length ; i++){
-        for(var a = 0 ; a < AllLineInfoList[i].notesAbove.length ; a++){
-            AllNoteInfoList.push({
-                lineIndex: i,
-                r: 1,
-                type: AllLineInfoList[i].notesAbove[a].type,
-                time: BpmToTime(AllLineInfoList[i].notesAbove[a].time, AllLineInfoList[i].bpm),
-                positionX: 0.05625 * canvas.width * AllLineInfoList[i].notesAbove[a].positionX,
-                holdTime: AllLineInfoList[i].notesAbove[a].holdTime,
-                speed: AllLineInfoList[i].notesAbove[a].speed,
-                floorPosition: AllLineInfoList[i].notesAbove[a].floorPosition
-            })
-        }
-        for(var a = 0 ; a < AllLineInfoList[i].notesBelow.length ; a++){
-            AllNoteInfoList.push({
-                lineIndex: i,
-                r: -1,
-                type: AllLineInfoList[i].notesBelow[a].type,
-                time: BpmToTime(AllLineInfoList[i].notesBelow[a].time, AllLineInfoList[i].bpm),
-                positionX: 0.05625 * canvas.width * AllLineInfoList[i].notesBelow[a].positionX,
-                holdTime: AllLineInfoList[i].notesBelow[a].holdTime,
-                speed: AllLineInfoList[i].notesBelow[a].speed,
-                floorPosition: AllLineInfoList[i].notesBelow[a].floorPosition
-            })
-        }
-        // console.log(AllLineInfoList[i].notesAbove)
-    }
-    console.log(AllNoteInfoList)
+/**
+ * 把秒转换成phi谱面时间
+ * @param {number} time 
+ * @param {number} bpm 
+ * @returns {number}
+ */
+function bpmToTime(time, bpm) {
+    //return (time / bpm) * 1.875;
+    return time * bpm / 1.875
 }
 
-// 官谱时间转换
-function BpmToTime(time, bpm) {
-    return (time / bpm) * 1.875;
-}
-
-// 线性插值函数
-function LinearInterpolation(s, e, sT, eT, NowTime) {
+/**
+ * 线性插值
+ * @param {number} s 
+ * @param {number} e 
+ * @param {number} sT 
+ * @param {number} eT 
+ * @param {number} NowTime 
+ * @returns {number}
+ */
+function linearInterpolation(s, e, sT, eT, NowTime) {
     return s + (e - s) * ((NowTime - sT) / (eT - sT));
 }
 
 // 判定线类
-class Line {
-    constructor(){
-        this.lineInfo = {}
+class lines {
+    constructor (ln){
+        this.lineNumber = ln
+        this.bpm = chart.judgeLineList[this.lineNumber].bpm
+        this.lineMoveEvent = chart.judgeLineList[this.lineNumber].judgeLineMoveEvents
+        this.x = 0
+        this.y = 0
+        this.r = 0
+        this.d = 0
+        this.lineRotateEvent = chart.judgeLineList[this.lineNumber].judgeLineRotateEvents
+        this.lineDisappearEvent = chart.judgeLineList[this.lineNumber].judgeLineDisappearEvents
+        this.speedEvent = chart.judgeLineList[this.lineNumber].speedEvents
+        this.setSpeedEventFp()
+        this.fp = 0
     }
-    CreateLine() {
-        for(var i = 0 ; i < AllLineInfoList.length ; i++){
-            this.lineInfo[i] = {
-                index: i,
-                bpm: AllLineInfoList[i].bpm,
-                lineMoveEventsList: AllLineInfoList[i].judgeLineMoveEvents,
-                LineMoveNumber: 0,
-                LineX: 0,
-                LineY: 0,
-                lineRotateEventsList: AllLineInfoList[i].judgeLineRotateEvents,
-                LineRotateNumber: 0,
-                LineR: 0,
-                lineDisappearEventsList: AllLineInfoList[i].judgeLineDisappearEvents,
-                LineDisappearNumber: 0,
-                LineD: 0,
-                lineSpeedEventList: AllLineInfoList[i].speedEvents,
-                LineSpeedNumber: 0,
-                LineS: 0,
-                SpeedFP: 0,
-                SpeedFP0: 0,
-                LineFP: 0
-            }
-            
-        }
-        console.log(this.lineInfo)
-    }
-    GetLineMove() {
-        for (let i = 0; i < AllLineInfoList.length; i++) {
-            let lineInfo = this.lineInfo[i];
-            if (time > BpmToTime(lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].endTime, lineInfo.bpm)) {
-                lineInfo.LineX = 
-                (lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].end - 0.5) * canvas.width
-                lineInfo.LineY = 
-                0-(lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].end2 - 0.5) * canvas.height
+    // 查找并计算事件
+    findEvent(es, timer, skey, ekey) {
+        // 遍历太卡，改用二分查找
+        let left = 0;
+        let right = es.length - 1;
+        let result = 0.0;
 
-                lineInfo.LineMoveNumber += 1
-            } else if (time > BpmToTime(lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].startTime, lineInfo.bpm)) {
-                lineInfo.LineX = LinearInterpolation((lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].start - 0.5) * canvas.width,
-                    (lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].end - 0.5) * canvas.width,
-                    BpmToTime(lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].startTime, lineInfo.bpm),
-                    BpmToTime(lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].endTime, lineInfo.bpm),
-                    time
-                )
-                lineInfo.LineY = 0-LinearInterpolation((lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].start2 - 0.5) * canvas.height,
-                    (lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].end2 - 0.5) * canvas.height,
-                    BpmToTime(lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].startTime, lineInfo.bpm),
-                    BpmToTime(lineInfo.lineMoveEventsList[lineInfo.LineMoveNumber].endTime, lineInfo.bpm),
-                    time
-                )
-                
-            }
-        }
-    }
-    GetLineRotate() {
-        for (let i = 0; i < AllLineInfoList.length; i++) {
-            let lineInfo = this.lineInfo[i];
-            if (time > BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].endTime, lineInfo.bpm)) {
-                lineInfo.LineR = -lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].end;
-                lineInfo.LineRotateNumber += 1
-            } else if (time > BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].startTime, lineInfo.bpm)) {
-                lineInfo.LineR = -LinearInterpolation(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].start,
-                    lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].end,
-                    BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].startTime, lineInfo.bpm),
-                    BpmToTime(lineInfo.lineRotateEventsList[lineInfo.LineRotateNumber].endTime, lineInfo.bpm),
-                    time
-                )
-        
+        while (left <= right) {
+            let mid = Math.floor((left + right) / 2);
+            let currentEvent = es[mid];
+
+
+            if (timer >= currentEvent.startTime && timer <= currentEvent.endTime) {
+                result = linearInterpolation(currentEvent[skey], currentEvent[ekey], currentEvent.startTime, currentEvent.endTime, timer);
+                break;
+            } else if (timer < currentEvent.startTime) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
             }
         }
 
+        return result;
     }
-    GetLineDisappear() {
-        for (let i = 0; i < AllLineInfoList.length; i++) {
-            let lineInfo = this.lineInfo[i];
-            if (time > BpmToTime(lineInfo.lineDisappearEventsList[lineInfo.LineDisappearNumber].endTime, lineInfo.bpm)) {
-               lineInfo.LineD = lineInfo.lineDisappearEventsList[lineInfo.LineDisappearNumber].end;
-               lineInfo.LineDisappearNumber += 1
-            } else if (time > BpmToTime(lineInfo.lineDisappearEventsList[lineInfo.LineDisappearNumber].startTime, lineInfo.bpm)) {
-               lineInfo.LineD = LinearInterpolation(lineInfo.lineDisappearEventsList[lineInfo.LineDisappearNumber].start, 
-                    lineInfo.lineDisappearEventsList[lineInfo.LineDisappearNumber].end,
-                    BpmToTime(lineInfo.lineDisappearEventsList[lineInfo.LineDisappearNumber].startTime, lineInfo.bpm),
-                    BpmToTime(lineInfo.lineDisappearEventsList[lineInfo.LineDisappearNumber].endTime, lineInfo.bpm),
-                    time
-               )
-            }
-        }
+    // 获取判定线坐标
+    getLineMove(timer) {
+        timer = bpmToTime(timer, this.bpm)
+        this.x = (this.findEvent(this.lineMoveEvent, timer, "start", "end") - 0.5) * canvas.width
+        this.y = -(this.findEvent(this.lineMoveEvent, timer, "start2", "end2") - 0.5) * canvas.height
+    //     let event = this.findEvent(this.lineMoveEvent, timer , "start", "end");
+    //     let st = bpmToTime(event.startTime, this.bpm)
+    //     let et = bpmToTime(event.endTime, this.bpm)
+    //     if (timer > et){
+    //         this.x = (event.end - 0.5) * canvas.width
+    //         this.y = -(event.end2 - 0.5) * canvas.height
+    //     }else if (timer > st){
+    //         this.x = linearInterpolation((event.start - 0.5) * canvas.width, (event.end - 0.5) * canvas.width ,st, et ,timer)
+    //         this.y = -linearInterpolation((event.start2 - 0.5) * canvas.height, (event.end2 - 0.5) * canvas.height ,st, et, timer)
+    //     }
     }
-    GetLineSpeed(){
-        for (var i = 0; i < AllLineInfoList.length; i++) {
-            let lineInfo = this.lineInfo[i];
-            if (lineInfo.LineSpeedNumber <= lineInfo.lineSpeedEventList.length){
-                if (time > BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].endTime, lineInfo.bpm)){
-                    lineInfo.LineS = lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].value;
-                    if (lineInfo.LineSpeedNumber > 0){
-                        lineInfo.SpeedFP = lineInfo.SpeedFP0 + lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber - 1].value * (BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm) - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber - 1].startTime , lineInfo.bpm))
-                    }else {
-                        lineInfo.SpeedFP = 0
-                    }
-                    lineInfo.SpeedFP0 = lineInfo.SpeedFP;
-                    lineInfo.LineFP = lineInfo.SpeedFP + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
-                    // console.log(lineInfo.LineS)
-                    lineInfo.LineSpeedNumber += 1;
-                }else if (time > BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime, lineInfo.bpm)){
-                    if (lineInfo.LineSpeedNumber > 0){
-                        lineInfo.SpeedFP = lineInfo.SpeedFP0 + lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber - 1].value * (BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm) - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber - 1].startTime , lineInfo.bpm))
-                    }else {
-                        lineInfo.SpeedFP = 0
-                    }
-                    lineInfo.LineS = lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].value;
-                    if ("floorPosition" in lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber]){
-                        lineInfo.LineFP = lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].floorPosition + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
-                    }else {
-                        lineInfo.LineFP = lineInfo.SpeedFP + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
-                    }
-                    // console.log(lineInfo.LineS)
-                    // lineInfo.LineFP = lineInfo.SpeedFP + lineInfo.LineS * (time - BpmToTime(lineInfo.lineSpeedEventList[lineInfo.LineSpeedNumber].startTime , lineInfo.bpm))
-                }
-            }
-            // console.log(lineInfo.LineFP)
-        }
+    // 获取判定线旋转角度
+    getLineR(timer) {
+        timer = bpmToTime(timer, this.bpm)
+        this.r = -this.findEvent(this.lineRotateEvent, timer, "start", "end")
     }
-    drawLine() {
-        for (var i = 0; i < AllLineInfoList.length; i++) {
-            let lineInfo = this.lineInfo[i];
-            AllLineXYRS[i] = {
-                x: lineInfo.LineX,
-                y: lineInfo.LineY,
-                r: lineInfo.LineR,
-                s: lineInfo.LineS,
-                fp: lineInfo.LineFP,
-                
-            }
-            ctx.strokeStyle = "rgba(255,255,170," + lineInfo.LineD + ")";
-            ctx.lineWidth = 5;
-    
-            ctx.beginPath();
-            ctx.moveTo(lineInfo.LineX + 1080 * Math.cos(lineInfo.LineR / 180 * Math.PI), lineInfo.LineY + 1080 * Math.sin(lineInfo.LineR / 180 * Math.PI));
-            ctx.lineTo(lineInfo.LineX + 1080 * Math.cos((lineInfo.LineR + 180) / 180 * Math.PI), lineInfo.LineY + 1080 * Math.sin((lineInfo.LineR + 180) / 180 * Math.PI));
-            ctx.stroke();
-    
-            // 保存当前的绘图状态
-            ctx.save();
-    
-            // 将原点移动到线的中心
-            ctx.translate(lineInfo.LineX, lineInfo.LineY);
-    
-            // 角度
-            ctx.rotate(lineInfo.LineR / 180 * Math.PI);
-    
-            // 设置文本样式
-            ctx.fillStyle = "rgba(0,0,0)";
-            ctx.font = "24px serif";
-    
-            // 计算文本的宽度
-            let text = i.toString();
-            let textWidth = ctx.measureText(text).width;
-    
-            // 将文本移动到中心位置
-            ctx.translate(-textWidth / 2, 0);
-    
-            // 绘制文本
-            ctx.fillText(text, 0, 0);
-    
-            // 恢复之前的绘图状态
-            ctx.restore();
-        }
+    // 获取判定线消失事件
+    getLineD(timer) {
+        timer = bpmToTime(timer, this.bpm)
+        this.d = this.findEvent(this.lineDisappearEvent, timer, "start", "end")
     }
-}
-
-var tapImg = document.getElementById("tapImg")
-var flickImg = document.getElementById("flickImg")
-var dragImg = document.getElementById("dragImg")
-
-
-class Note {
-
-    drawNote() {
-        for (var i = 0; i < AllNoteInfoList.length; i++) {
-            if (time > AllNoteInfoList[i].time){
-                
-                HtiList.push(
-                    {
-                        Y: AllLineXYRS[AllNoteInfoList[i].lineIndex].y ,
-                        X: AllLineXYRS[AllNoteInfoList[i].lineIndex].x ,
-                        R: AllLineXYRS[AllNoteInfoList[i].lineIndex].r ,
-                        X1: AllNoteInfoList[i].positionX,
-                    }
-                )
-                AllNoteInfoList.splice(i ,1)
-                // HtiList.splice(1, 1)
-
-                // if(AllNoteInfoList[i].type === 1){
-                //     console.log("tap")
-                // }else if(AllNoteInfoList[i].type === 2){
-                //     console.log("drag")
-                // }else if(AllNoteInfoList[i].type === 3){
-                //     console.log("hold")
-                // }else{
-                //     console.log("flick")
-                // }
-                // var tapA = document.getElementById('tapA');
-                // // 使用Howler.js
-                // var sound = new Howl({
-                //     src: [tapA.src]
-                // }).play();
+    // 计算每个速度事件的fp
+    setSpeedEventFp() {
+        for (let i = 0; i < this.speedEvent.length; i++) {
+            this.speedEvent[i].startTime = this.speedEvent[i].startTime / this.bpm * 1.875;
+            this.speedEvent[i].endTime = this.speedEvent[i].endTime / this.bpm * 1.875;
+            if(i === 0){
+                this.speedEvent[i].fp = 0
             }else{
-                // ctx.lineWidth = 20;
-                
-                if (AllNoteInfoList[i].type === 3){
-                    var fp = 0.6 * canvas.height * 1 * (AllNoteInfoList[i].floorPosition - AllLineXYRS[AllNoteInfoList[i].lineIndex].fp)
-                }else {
-                    var fp = 0.6 * canvas.height * AllNoteInfoList[i].speed * (AllNoteInfoList[i].floorPosition - AllLineXYRS[AllNoteInfoList[i].lineIndex].fp)
-                }
-                if (AllNoteInfoList[i].r != 1){
-                    fp = -1*fp
-                }
-
-                var x = AllLineXYRS[AllNoteInfoList[i].lineIndex].x +
-                        (AllNoteInfoList[i].positionX * 
-                        Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
-                        0 * 
-                        Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-                var y = AllLineXYRS[AllNoteInfoList[i].lineIndex].y +
-                        (AllNoteInfoList[i].positionX * 
-                        Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) -
-                        0* 
-                        Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-
-                if(AllNoteInfoList[i].type === 2){
-                    var img = dragImg
-                }else if(AllNoteInfoList[i].type === 4){
-                    var img = flickImg
-                }else{
-                    var img = tapImg
-                    
-                }
-                ctx.save()
-                ctx.translate(AllLineXYRS[AllNoteInfoList[i].lineIndex].x,AllLineXYRS[AllNoteInfoList[i].lineIndex].y)
-                ctx.rotate(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI)
-                // ctx.translate(canvas.width / 400, canvas.height / 400);
-                ctx.drawImage(img, AllNoteInfoList[i].positionX - 45, -1*fp, 100, 100/img.width*img.height);
-                ctx.restore()
-
-                // var x = AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX -
-                //         (40 * 
-                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
-                //         fp * 
-                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-                // var y = AllLineXYRS[AllNoteInfoList[i].lineIndex].y -
-                //         (40 * 
-                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) +
-                //         fp * 
-                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-
-                // var x1 = x + 
-                //         (80 * 
-                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
-                //         0 * 
-                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-                // var y1 = y + 
-                //         (80 * 
-                //         Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI) + 
-                //         0 *  
-                //         Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-                // ctx.beginPath()
-                // // ctx.moveTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 40 * Math.cos(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI), AllLineXYRS[AllNoteInfoList[i].lineIndex].y + fp + 40 * Math.sin(AllLineXYRS[AllNoteInfoList[i].lineIndex].r / 180 * Math.PI))
-                // // ctx.lineTo(AllLineXYRS[AllNoteInfoList[i].lineIndex].x + AllNoteInfoList[i].positionX + 40 * Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI), AllLineXYRS[AllNoteInfoList[i].lineIndex].y + fp + 40 * Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI))
-                // ctx.moveTo(x, y)
-                // ctx.lineTo(x1, y1)
-                // // ctx.lineTo(x + 
-                // //     (80 * 
-                // //     Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI) + 
-                // //     0 * 
-                // //     Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI)), 
-                // //     y + 
-                // //     (80 * 
-                // //     Math.sin((AllLineXYRS[AllNoteInfoList[i].lineIndex].r - 180) / 180 * Math.PI) + 
-                // //     0 * 
-                // //     Math.cos((AllLineXYRS[AllNoteInfoList[i].lineIndex].r + 180) / 180 * Math.PI))
-                // // )
-                // ctx.stroke()
+                this.speedEvent[i].fp = this.speedEvent[i-1].fp + this.speedEvent[i-1].value * (this.speedEvent[i].startTime - this.speedEvent[i-1].startTime)
             }
+        }
+        console.log(this.speedEvent)
             
+    }
+    // 查找并计算速度事件
+    findSpeedEvent(es, timer) {
+        // 遍历太卡，改用二分查找
+        let left = 0;
+        let right = es.length - 1;
+        let result = 0.0;
+        let lastFp = 0;
+
+        while (left <= right) {
+            let mid = Math.floor((left + right) / 2);
+            let currentEvent = es[mid];
+
+            if (timer >= currentEvent.startTime && timer <= currentEvent.endTime) {
+                if (mid !== 0) lastFp = es[mid-1].fp + es[mid-1].value * (timer - es[mid-1].startTime)
+                result =  currentEvent.fp + (currentEvent.value * (timer - currentEvent.startTime))//+lastFp;
+
+                break;
+            } else if (timer < currentEvent.startTime) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        return result;
+    }
+    // 获取判定线Fp
+    getLineFp(timer) {
+        //timer = bpmToTime(timer, this.bpm)
+        this.fp = this.findSpeedEvent(this.speedEvent, timer)
+    }
+    // 绘制判定线
+    drawLine() {
+        ctx.save()
+        ctx.strokeStyle = `rgba(255,255,170,${this.d})`
+        ctx.lineWidth = 5
+        ctx.beginPath()
+        ctx.translate(this.x, this.y)
+        
+        ctx.rotate(this.r * Math.PI / 180)
+        ctx.moveTo(-1080,0)
+        ctx.moveTo(-1080,0)
+        ctx.lineTo(1080,0)
+        ctx.stroke()
+        ctx.fillStyle = "rgba(0,0,0)"
+        ctx.font = "24px serif"
+        let text = this.lineNumber.toString()
+        let textWidth = ctx.measureText(text).width
+        ctx.translate(-textWidth / 2, 0)
+        //ctx.fillText(text, 0, 0)
+        ctx.restore()
+        //ctx.translate(canvas.width / 2, canvas.height / 2)
+    }
+}
+
+// note类
+class note {
+    constructor (index, info, ln, r) {
+        this.index = index
+        this.info = info
+        this.ln = ln
+        this.type = info.type
+        this.time = info.time / chart.judgeLineList[ln].bpm * 1.875
+        this.holdTime = info.holdTime / chart.judgeLineList[ln].bpm * 1.875
+        this.x = (info.positionX * 0.05625 * canvas.width)-5
+        this.r = r
+        this.fp = info.floorPosition
+        this.speed = info.speed
+        this.ht = this.time// + (60 / chart.judgeLineList[ln].bpm)
+        this.isComboANDHold = false
+        // this.hitAudio = new Audio()
+        // this.hitAudio.src = hitAudio[this.type].src
+    }
+    // 绘制note
+    drawNote(timer) {
+        // 如果 timer >= 打击时间，且 note 类型不是 Hold，则播放打击特效
+        if (timer >= this.time) if(this.type !== 3) {
+            hitI.push(new hit(this.ln, this.x, timer))
+            // this.hitAudio.play()
+        }
+        // 如果 timer >= 打击时间，且 note 类型不是 Hold，则combo++、score++
+        if (timer >= this.time) if(this.type !== 3){
+            combo += 1
+            score += 1000000 / noteI.length
+        }else{  // 如果 Hold 的combo没有增加，且 timer >= Hold 结束时间 - 0.1，则combo++、score++
+            if(this.isComboANDHold === false) if (timer >= this.time + this.holdTime - 0.1) {
+                // 将 Hold 标记为已经combo++过
+                this.isComboANDHold = true
+                combo += 1
+                score += 1000000 / noteI.length
+            }
+        }
+        // 如果音符是 Hold，且 timer >= Hold 打击时间，则播放打击特效
+        if (this.type === 3 && timer >= this.time){
+            // 如果 timer >= 打击特效生成间隔，则播放打击特效
+            if (timer >= this.ht){
+                hitI.push(new hit(this.ln, this.x, timer))
+                // 计算下一次打击特效生成时间
+                this.ht = timer + (60 / chart.judgeLineList[this.ln].bpm / 2)
+            }
+        }
+        // 如果 timer >= note 打击时间 + 持续时间，则删除该 note
+        if (timer >= this.time + this.holdTime) {
+            noteI[this.index] = null
+            return
+        }
+        ctx.save()
+        ctx.beginPath()
+        // 将画布坐标原点移到判定线中心
+        ctx.translate(linesI[this.ln].x, linesI[this.ln].y)
+        // 旋转画布坐标系
+        ctx.rotate(linesI[this.ln].r * Math.PI / 180)
+        // 计算 note 的y坐标
+        let y = this.r*-(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height
+
+        // 如果 note 是Tap
+        if (this.type === 1){
+            ctx.drawImage(noteImg[1], this.x - 45, y, 100, 100/noteImg[1].width*noteImg[1].height)
+        }
+        // 否则如果 note 是Drag
+        else if (this.type === 2){
+            ctx.drawImage(noteImg[2], this.x - 45, y, 100, 100/noteImg[2].width*noteImg[2].height)
+        }
+        // 否则如果 note 是Hold
+        else if (this.type === 3){
+            // 计算 hold 的 h
+            let d = (this.r *0.6 * canvas.height * this.speed * this.holdTime) / 1.6
+            // 如果 timer >= Hold 打击时间，则绘制 hold 的尾巴
+            if(timer >= this.time) {
+                y = 0
+                d = this.r * 0.6 * canvas.height * this.speed * (this.time - timer) / 1.6 + this.r*(0.6 * canvas.height * this.speed * this.holdTime / 1.6)
+                ctx.drawImage(noteImg[6], this.x - 45,( y - (d*1.9) - 5), 100, 100/noteImg[6].width*noteImg[6].height)
+            }
+            // 如果 timer < Hold 打击时间，则绘制 hold 的头和尾巴
+            else {
+                ctx.drawImage(noteImg[5], this.x - 45, y, 100, 100/noteImg[5].width*noteImg[5].height)
+                ctx.drawImage(noteImg[6], this.x - 45, (y - (d*1.9) - 5), 100, 100/noteImg[6].width*noteImg[6].height)
+            }
+            // 绘制 Hold 身
+            ctx.drawImage(noteImg[3], this.x - 45, y, 100, -d/noteImg[3].width*noteImg[3].height)
+        }
+        // 否则如果 note 是 Flick
+        else if (this.type === 4){
+            ctx.drawImage(noteImg[4], this.x - 45, y, 100, 100/noteImg[4].width*noteImg[4].height)
+        }
+        ctx.restore()
+    }   
+}
+
+
+// 打击特效类
+class hit {
+    constructor(ln, offsetX, ht) {
+        this.ln = ln;
+        this.offsetX = offsetX; // hit 相对于 line 的 x 轴偏移量
+        this.y = linesI[ln].y - (256 / 3) + 5;
+        this.x = linesI[ln].x - (256 / 4) - 5
+        this.r = linesI[ln].r * Math.PI / 180;
+        this.ht = ht;
+        // 随机生成 3 个 hit 的 block 初始角度
+        this.blockR = [Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180]
+        this.blockOffset = 0
+        this.blockD = 1
+        this.blockSize = 15
+    }
+    drawHit(timer) {
+        // 如果 timer < hit 生成时间 + 0.5，则不绘制 hit
+        if (timer >= this.ht + 0.5) return;
+        ctx.save();
+        ctx.beginPath();
+        // 利用三角函数计算 hit 在画布上的坐标
+        const hitX = this.x + this.offsetX * Math.cos(this.r);
+        const hitY = this.y + this.offsetX * Math.sin(this.r);
+        // 绘制 hit
+        ctx.drawImage(
+            hitImg[Math.floor(30 * ((timer - this.ht) / 0.5))],
+            hitX,
+            hitY,
+            256 / 1.7,
+            256 / 1.7
+        );
+        ctx.restore();
+        // 绘制 hit 的 block
+        this.drawBlock(timer, hitX + (256 / 4), hitY + (256 / 3))
+    }
+    drawBlock(timer, x, y) {
+        // 如果 timer < hit 生成时间 + 0.5，则不绘制 block
+        if (timer >= this.ht + 0.5) return;
+        // 缓动库计算 block 的偏移、透明度、大小
+        this.blockOffset = easeFuncs[7]((timer - this.ht) / 0.5) * 100
+        this.blockD = 1-easeFuncs[8]((timer - this.ht) / 0.5)
+        this.blockSize = 15 * 1 - easeFuncs[11]((timer - this.ht) / 0.5)
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255,255,135,${this.blockD})`;
+        // 绘制 3 个 block
+        for (let i = 0; i < 3; i++) {
+            const blockX = x + this.blockOffset * Math.cos(this.blockR[i])
+            const blockY = y + this.blockOffset * Math.sin(this.blockR[i])
+            ctx.fillRect(blockX, blockY, this.blockSize, this.blockSize);
+        }
+        ctx.restore();
+    }
+}
+
+/**
+ * 绘制当前的combo
+ * @returns {any}
+ */
+function drawCombo(){
+    if (combo <= 2) return
+    ctx.save()
+    ctx.beginPath()
+    ctx.font = "32px Phigros"
+    ctx.fillStyle = "rgb(255,255,255)"
+    const text = combo.toString();
+    const textWidth = ctx.measureText(text).width;
+    ctx.fillText(combo,  - textWidth / 2, -canvas.height / 2 + 35)
+    ctx.font = "24px Phigros"
+    const ComboText = comboText.toString()
+    const ComboTextWidth = ctx.measureText(ComboText).width;
+    ctx.fillText(ComboText,  - ComboTextWidth / 2, -canvas.height / 2 + 60)
+    ctx.restore()
+}
+
+/**
+ * 把分数转换为字符串，并在前面补零
+ * @returns {string}
+ */
+function scoreToText(score){
+    if (combo >= noteI.length) return "1000000"
+    const scoreText = Math.floor(score).toString().padStart(7, '0');
+    return scoreText
+}
+
+/**
+ * 绘制当前的分数
+ * @returns {any}
+ */
+function drawScore(){
+    ctx.save()
+    ctx.beginPath()
+    ctx.font = "24px Phigros"
+    ctx.fillStyle = "rgb(255,255,255)"
+    const scoreText = scoreToText(score);
+    const textWidth = ctx.measureText(scoreText).width;
+    ctx.fillText(scoreText, canvas.width / 2 - textWidth - 25, -canvas.height / 2 + 35)
+}
+
+/**
+ * 绘制暂停按钮
+ * @returns {any}
+ */
+function drawPause(){
+    //console.log(pauseImg)
+    ctx.save()
+    ctx.beginPath()
+    ctx.drawImage(pauseImg, -canvas.width / 2 + 20, -canvas.height / 2 + 20, 20, 20)
+    ctx.restore()
+}
+// 当图片加载完成后，绘制暂停按钮
+pauseImg.onload = function(){drawPause()}
+
+/**
+ * 绘制进度条
+ * @param {number} timer
+ * @returns {any}
+ */
+function drawTimerLine(timer){
+    ctx.save()
+    ctx.beginPath()
+    const x = linearInterpolation(0, canvas.width, 0, audio.duration, timer)
+    ctx.drawImage(timerLineImg,  x - timerLineImg.width - canvas.width - 115, -canvas.height / 2, timerLineImg.width * 1.5, timerLineImg.height * 1.5)
+    ctx.restore()
+}
+// 当图片加载完成后，绘制进度条
+timerLineImg.onload = function(){drawTimerLine(audio.currentTime)}
+
+/**
+ * 绘制水印
+ * @returns {any}
+ */
+function drawShuiYin() {
+    ctx.save()
+    ctx.beginPath()
+    ctx.font = "12px Phigros"
+    ctx.fillStyle = "rgb(255,255,255)"
+    const shuiYin = "chp-phi All code by CHCAT1320"
+    const textWidth = ctx.measureText(shuiYin).width;
+    ctx.fillText(shuiYin,  canvas.width / 2 - textWidth - 10, canvas.height / 2 - 5)
+    ctx.restore()
+}
+
+ /**
+ * 开始播放谱面
+ * @returns {any}
+ */
+function start(){
+    // 创建判定线
+    for (let i = 0; i < chart.judgeLineList.length; i++){
+        linesI.push(new lines(i))
+    }
+    // 创建note
+    let noteIndex = 0
+    for (let i = 0; i < chart.judgeLineList.length; i++){
+        for (let j = 0; j < chart.judgeLineList[i].notesAbove.length; j++){
+            let noteInfo = chart.judgeLineList[i].notesAbove[j]
+            noteI.push(new note(noteIndex, noteInfo, i, 1))
+            noteIndex++
+        }
+        for (let j = 0; j < chart.judgeLineList[i].notesBelow.length; j++){
+            let noteInfo = chart.judgeLineList[i].notesBelow[j]
+            noteI.push(new note(noteIndex, noteInfo, i, -1))
+            noteIndex++
         }
     }
-}
 
-function drawHit(){
-//     if(HtiList.length != 0){
-//         let timeTemp = time
-//         if(time < timeTemp+1){
-//             ctx.save();
-//             ctx.translate(HtiList[0].X,HtiList[0].Y)
-//             ctx.rotate(HtiList[0].R / 180 * Math.PI)
-//             ctx.beginPath();
-//             ctx.arc(HtiList[0].X1,0, 20, 0, 2 * Math.PI);
-//             ctx.fillStyle = "rgba(255,0,0,0.5)";
-//             ctx.fill();
-//             ctx.closePath();
-//             ctx.restore()
+    audio.play()
+    requestAnimationFrame(update)
 
-//         }else if(time>timeTemp+1){
-//             HtiList.splice(0, 1)
-//             console.log(123)
-//         }
-        
-//     }
-}
-// 谱面时间计算变量
-let startTime = performance.now();
-let endTime = 0;
-// 定义计时器
-let intervalId = null;
-
-// 开始播放的函数
-function StartPlay() {
-    // 验证是否添加了谱面
-    if (AllLineInfoList.length === 0) {
-        console.error("未添加谱面，请先添加谱面");
-    } else {
-        // 获取audio标签
-        var audio = document.getElementById("bgm");
-        audio.play();
-        // 实例化类
-        let linesInstance = new Line();
-        let notesInstance = new Note();
-        // 创建线
-        linesInstance.CreateLine();
-
-
-        linesInstance.drawLine();
-        // 使用setInterval定期检查audio的currentTime
-        intervalId = setInterval(function () {
-            // 检查audio是否已经开始播放
-            if (audio.currentTime > 0) {
-                // 谱面时间计算变量
-                let startTime = performance.now();
-
-                // 一旦开始播放，就不再需要这个检查，可以清除这个setInterval
-                clearInterval(intervalId);
-                intervalId = setInterval(function () {
-                    
-                    // // 谱面时间计算变量
-                    // let startTime = performance.now();
-                    linesInstance.GetLineMove();
-                    linesInstance.GetLineRotate();
-                    linesInstance.GetLineDisappear();
-                    linesInstance.GetLineSpeed();
-
-                    ctx.clearRect(0 - (canvas.width / 2), 0 - (canvas.height / 2), canvas.width, canvas.height);
-                    // 绘制线
-                    var BG = document.getElementById("BG")
-                    if(BG.src !="" ){
-                        ctx.drawImage(BG, 0 - canvas.width/2, 0 - canvas.height/2, canvas.width, canvas.height);
-                    }
-                    notesInstance.drawNote()
-                    linesInstance.drawLine();
-                    drawHit()
-                    
-                    
-                    // 计算谱面现在时间
-                    endTime = performance.now();
-                    let duration = endTime - startTime;
-                    time = (duration / 1000).toFixed(3);
-                    document.getElementById("chartTime").innerHTML = `谱面时间：${time}s`;
-                }, 0);
+    // 更新播放
+    function update(){
+        let timer = audio.currentTime
+        ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height)
+        // 如果 bg 存在，则绘制背景
+        if (bg !== null && bg !== undefined) ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height)
+        // 更新判定线
+        for (let i = 0; i < linesI.length; i++){
+            linesI[i].getLineMove(timer)
+            linesI[i].getLineR(timer)
+            linesI[i].getLineD(timer)
+            linesI[i].getLineFp(timer)
+            linesI[i].drawLine()
+        }
+        // 更新 note
+        for (let i = 0; i < noteI.length; i++){
+            if (noteI[i] !== null){
+                noteI[i].drawNote(timer)
             }
-        }, 1);
+        }
+        // 更新 hit
+        for (let i = 0; i < hitI.length; i++){
+            if (hitI[i] !== null){
+                if (timer >= hitI[i].ht + 0.5) hitI[i] = null
+                if (hitI[i] !== null) hitI[i].drawHit(timer)
+            }
+        }
+        // 绘制其他
+        drawCombo()
+        drawScore()
+        drawPause()
+        drawTimerLine(timer)
+        drawShuiYin()
+
+        // 更新 FPS
+        function updateFPS() {
+            const now = performance.now();
+            frameCount++;
+            if (now - lastTime >= 1000) {
+                document.getElementById('fps').textContent = 'FPS: ' + frameCount;
+                frameCount = 0;
+                lastTime = now;
+            }
+
+        }
+        // 自调用
+        requestAnimationFrame(update)
+        requestAnimationFrame(updateFPS)
     }
 }
-
-// 率检测函数
-let lastTime = 0;
-let frameCount = 0;
-
-function updateFPS() {
-    const now = performance.now();
-    frameCount++;
-    if (now - lastTime >= 1000) {
-        document.getElementById('fps').textContent = 'FPS: ' + frameCount;
-        frameCount = 0;
-        lastTime = now;
-    }
-    requestAnimationFrame(updateFPS);
-}
-requestAnimationFrame(updateFPS);

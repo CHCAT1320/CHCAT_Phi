@@ -1,0 +1,13 @@
+#body{
+    text-align: center;
+}
+#canvas{
+    background-color: darkgrey;
+}
+@font-face {
+    font-family: "Phigros";
+    src: url("../fonts/Phigros.ttf");
+}
+* {
+    font-family: "Phigros";
+}

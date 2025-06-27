@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHCAT'Phi</title>
+    <style>
+        #PlaybackWindow {
+            position: relative;
+            width: 720px;
+            height: 540px;
+            border: 1px solid black;
+            background-color: darkgrey;
+            margin: 20px auto;
+            z-index: -999999;
+            overflow: hidden;
+        }
+        .line {
+            position: absolute;
+            top: 50%;
+            width: 2160px;
+            height: 5px;
+            background-color: white;
+            text-align: center;
+        }
+    </style>
+</head>
+<body style="background-color: azure;">
+    <div id="body">
+        导入谱面<input type="file" onchange="ChartFiles(this.files)">
+        导入音乐<input type="file" onchange="bgm(this.files)">
+        <audio id="audio" src=""></audio>
+        <button type="button" onclick="StartPlay()">开始</button>
+        <div id="PlaybackWindow">
+            <div id="chartTime">谱面时间：-114514.191</div>
+            <!-- <div id="line"></div> -->
+            <div style="z-index: 9999999999;position: absolute;top: 95%;">code by CHCAT1320</div>
+        </div>
+        <audio class="res mainAudio"></audio>
+        <img class="res tap" src="./resources/Notes/Tap.png">
+        <img class="res tapDub" src="./resources/Notes/Tap_dub.png">
+        <img class="res drag" src="./resources/Notes/Drag.png">
+        <img class="res dragDub" src="./resources/Notes/Drag_dub.png">
+        <img class="res flick" src="./resources/Notes/Flick.png">
+        <img class="res flickDub" src="./resources/Notes/Flick_dub.png">
+        <img class="res holdHead" src="./resources/Notes/Hold_Head.png">
+        <img class="res holdHeadDub" src="./resources/Notes/Hold_Head_dub.png">
+        <img class="res holdBody" src="./resources/Notes/Hold_Body.png">
+        <img class="res holdBodyDub" src="./resources/Notes/Hold_Body_dub.png">
+        <img class="res holdEnd" src="./resources/Notes/Hold_End.png">
+        <img class="res holdEndDub" src="./resources/Notes/Hold_End_dub.png">
+        <audio class="res tapSound" src="./resources/Note_Click_Audio/Tap.wav"></audio>
+        <audio class="res dragSound" src="./resources/Note_Click_Audio/Drag.wav"></audio>
+        <audio class="res flickSound" src="./resources/Note_Click_Audio/Flick.wav"></audio>
+        <audio class="res holdSound" src="./resources/Note_Click_Audio/Hold.wav"></audio>
+        <svg width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+            <filter id="clickEffectColorFilter">
+                <feColorMatrix type="matrix" values="
+                    0.9921875 0 0 0 0
+                    0 0.99609375 0 0 0
+                    0 0 0.66015625 0 0
+                    0 0 0 1 0
+                "></feColorMatrix>
+            </filter>
+        </svg>
+    </div>
+    <script src="js.js"></script>
+</body>
+</html>
+
+<style>
+    .mainCanvas {
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .res {
+        display: none;
+    }
+</style>

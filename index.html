@@ -1,90 +1,23 @@
 <!DOCTYPE html>
-    <html lang="zh-CN">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Document</title>
-            <style>
-                #canvas {
-                    background-color: darkgray;
-                    background-image: url();
-                }
-                @keyframes size {
-                    0% {
-                        transform: translate(-50%, -50%) scale(0);
-                        opacity: 0;
-                    }
-                    100% {
-                        transform: translate(-50%, -50%) scale(1);
-                        opacity: 1;
-                    }
-                }
-                @keyframes size0 {
-                    0% {
-                        transform: translate(-50%, -50%) scale(1);
-                        opacity: 1;
-                    }
-                    100% {
-                        transform: translate(-50%, -50%) scale(0);
-                        opacity: 0;
-                    }
-                }
-                #shadow {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(0, 0, 0, 0.5);
-                    z-index: 1;
-                    display: none;
-                    opacity: 0;
-                }
-                #readFilesPopo {
-                    position: absolute;
-                    text-align: center;
-                    width: 200px;
-                    height: 300px;
-                    background-color: #AFE5FF;
-                    top: 50%;
-                    left: 50%;
-                    z-index: 9999;
-                    transform: translate(-50%, -50%);
-                    opacity: 0;
-                    display: none;
-                    /* animation: size 0.5s cubic-bezier(0.33, 1, 0.68, 1); */
-                    
-                    /* display: none; */
-                    
-                }
-                #body {
-                    text-align: center;
-                }
-
-            </style>
-        </head>
-        <body>
-            <div id="body">
-                <button onclick="ReadFiles()">导入文件</button>
-                <div id="shadow" onclick="ReadFiles()"></div>
-                <div id="readFilesPopo">
-                    <p>请不要导入物量超过1000的谱面，会导致event延迟</p>
-                    导入谱面<input type="file" onchange="ChartFiles(this.files)">
-                    导入音乐<input type="file" onchange="BgmFiles(this.files)">
-                    导入曲绘（测试）<input type="file" onchange="BGFiles(this.files)">
-                </div>
-                <button onclick="StartPlay()">开始播放</button><br><br>
-                <div id="chartTime"></div>
-                <div id="fps"></div>
-                <canvas id="canvas" width="720px" height="540px"></canvas>
-                <img src="img/Tap.png" id="tapImg" style="display: none;">
-                <img src="img/Flick.png" id="flickImg" style="display: none;">
-                <img src="img/Drag.png" id="dragImg" style="display: none;">
-                <img id="BG" src="" style="display: none;">
-                <audio id="bgm"></audio>
-                <audio id="tapA" src="audio/tap.mp3"></audio>
-            </div>
-        </body>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-        <script src="js/main.js"></script>
-        </html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Phigros模拟器 chp-phi</title>
+</head>
+<body>
+    <div id="body">
+        <h1>CHPhiPlayer</h1>
+        <div id="fps"></div>
+        <input type="file" onchange="readChart(this.files)">
+        <input type="file" onchange="bgmFiles(this.files)">
+        <input type="file" onchange="bgFiles(this.files)"><br>
+        <button onclick="start()">start</button><br>
+        <canvas id="canvas"></canvas>
+        <audio id="audio"></audio>
+    </div>
+    <script src="js/ease.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
