@@ -38,6 +38,7 @@ var pauseImg = new Image()
 pauseImg.src = "img/pause.png"
 var timerLineImg = new Image()
 timerLineImg.src = "img/timerLine.png"
+var speedEventSpeed = 1
 
 // var hitAudio = []
 // hitAudio[1] = new Audio()
@@ -377,7 +378,7 @@ class note {
         this.x = (info.positionX * 0.05625 * canvas.width)-5
         this.r = r
         this.fp = info.floorPosition
-        this.speed = info.speed
+        this.speed = info.speed * speedEventSpeed
         this.ht = this.time// + (60 / chart.judgeLineList[ln].bpm)
         this.isComboANDHold = false
         // this.hitAudio = new Audio()
@@ -423,15 +424,15 @@ class note {
         // 旋转画布坐标系
         ctx.rotate(linesI[this.ln].r * Math.PI / 180)
         // 计算 note 的y坐标
-        let y = this.r*-(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height
+        let y = this.r*-(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height * speedEventSpeed
 
         // 如果 note 是Tap
         if (this.type === 1){
-            ctx.drawImage(noteImg[1], this.x - 45, y, 100, 100/noteImg[1].width*noteImg[1].height)
+            ctx.drawImage(noteImg[1], this.x - 50, y - 100/noteImg[1].width*noteImg[1].height /2, 100, 100/noteImg[1].width*noteImg[1].height)
         }
         // 否则如果 note 是Drag
         else if (this.type === 2){
-            ctx.drawImage(noteImg[2], this.x - 45, y, 100, 100/noteImg[2].width*noteImg[2].height)
+            ctx.drawImage(noteImg[2], this.x - 50, y - 100/noteImg[2].width*noteImg[2].height /2, 100, 100/noteImg[2].width*noteImg[2].height)
         }
         // 否则如果 note 是Hold
         else if (this.type === 3){
@@ -441,19 +442,19 @@ class note {
             if(timer >= this.time) {
                 y = 0
                 d = this.r * 0.6 * canvas.height * this.speed * (this.time - timer) / 1.6 + this.r*(0.6 * canvas.height * this.speed * this.holdTime / 1.6)
-                ctx.drawImage(noteImg[6], this.x - 45,( y - (d*1.9) - 5), 100, 100/noteImg[6].width*noteImg[6].height)
+                ctx.drawImage(noteImg[6], this.x - 50,( y - (d*1.9) - 5), 100, 100/noteImg[6].width*noteImg[6].height)
             }
             // 如果 timer < Hold 打击时间，则绘制 hold 的头和尾巴
             else {
-                ctx.drawImage(noteImg[5], this.x - 45, y, 100, 100/noteImg[5].width*noteImg[5].height)
-                ctx.drawImage(noteImg[6], this.x - 45, (y - (d*1.9) - 5), 100, 100/noteImg[6].width*noteImg[6].height)
+                ctx.drawImage(noteImg[5], this.x - 50, y, 100, 100/noteImg[5].width*noteImg[5].height)
+                ctx.drawImage(noteImg[6], this.x - 50, (y - (d*1.9) - 5), 100, 100/noteImg[6].width*noteImg[6].height)
             }
             // 绘制 Hold 身
-            ctx.drawImage(noteImg[3], this.x - 45, y, 100, -d/noteImg[3].width*noteImg[3].height)
+            ctx.drawImage(noteImg[3], this.x - 50, y, 100, -d/noteImg[3].width*noteImg[3].height)
         }
         // 否则如果 note 是 Flick
         else if (this.type === 4){
-            ctx.drawImage(noteImg[4], this.x - 45, y, 100, 100/noteImg[4].width*noteImg[4].height)
+            ctx.drawImage(noteImg[4], this.x - 50, y - 100/noteImg[4].width*noteImg[4].height /2, 100, 100/noteImg[4].width*noteImg[4].height)
         }
         ctx.restore()
     }   
