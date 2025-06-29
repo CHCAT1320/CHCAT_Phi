@@ -390,6 +390,13 @@ class note {
     }
     // 绘制note
     drawNote(timer) {
+        // 计算 note 的y坐标
+        let y = this.r * -(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height * speedEventSpeed;
+        if (Math.abs(y) > 1620){
+            if (this.time - timer > 5){
+                return;
+            }
+        }
         // 如果 timer >= 打击时间，且 note 类型不是 Hold，则播放打击特效
         if (timer >= this.time) {
             if(this.type !== 3) {
@@ -443,8 +450,6 @@ class note {
         ctx.translate(linesI[this.ln].x, linesI[this.ln].y);
         // 旋转画布坐标系
         ctx.rotate(linesI[this.ln].r * Math.PI / 180);
-        // 计算 note 的y坐标
-        let y = this.r * -(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height * speedEventSpeed;
 
         // 如果 note 是Tap
         if (this.type === 1) {
@@ -626,6 +631,16 @@ function drawShuiYin() {
     ctx.restore();
 }
 
+function notePretreatment(notes) {
+    let notesList = notes
+    notesList.sort((a, b) => a.time - b.time)
+    console.log(notesList)
+    for (let i = 0; i < notesList.length; i++) {
+        notesList[i].index = i
+    }
+    return notesList
+}
+
  /**
  * 开始播放谱面
  * @returns {any}
@@ -649,6 +664,7 @@ function start() {
             noteIndex++;
         }
     }
+    noteI = notePretreatment(noteI)
 
     // 预加载音效
     preloadSounds()
@@ -715,7 +731,7 @@ function update() {
     requestAnimationFrame(update);
 }
 
-canvas.addEventListener('mousedown', (e) => {
-    ctx.arc(e.clientX, e.clientY, 10, 0, 2 * Math.PI);
-    ctx.fill();
-});
+// canvas.addEventListener('mousedown', (e) => {
+//     ctx.arc(e.clientX, e.clientY, 10, 0, 2 * Math.PI);
+//     ctx.fill();
+// });
