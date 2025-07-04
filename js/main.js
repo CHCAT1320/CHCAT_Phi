@@ -367,6 +367,7 @@ class lines {
         let text = this.lineNumber.toString();
         let textWidth = ctx.measureText(text).width;
         ctx.translate(-textWidth / 2, 0);
+        //ctx.fillText(text, 0, 0);
         ctx.restore();
     }
 }
@@ -444,6 +445,11 @@ class note {
             noteI[this.index] = null;
             return;
         }
+        if (this.fp - linesI[this.ln].fp < -0.001){
+            if (this.type !== 3) return;
+            else if (this.isHoldHit === false) return;
+        }
+        if (this.type === 3) if (this.speed === 0) return;
         ctx.save();
         ctx.beginPath();
         // 将画布坐标原点移到判定线中心
@@ -453,33 +459,37 @@ class note {
 
         // 如果 note 是Tap
         if (this.type === 1) {
-            ctx.drawImage(noteImg[1], this.x - 50, y - 100 / noteImg[1].width * noteImg[1].height / 2, 100, 100 / noteImg[1].width * noteImg[1].height);
+            ctx.drawImage(noteImg[1], this.x - 45, y - 100 / noteImg[1].width * noteImg[1].height / 2, 100, 100 / noteImg[1].width * noteImg[1].height);
         }
         // 否则如果 note 是Drag
         else if (this.type === 2) {
-            ctx.drawImage(noteImg[2], this.x - 50, y - 100 / noteImg[2].width * noteImg[2].height / 2, 100, 100 / noteImg[2].width * noteImg[2].height);
+            ctx.drawImage(noteImg[2], this.x - 45, y - 100 / noteImg[2].width * noteImg[2].height / 2, 100, 100 / noteImg[2].width * noteImg[2].height);
         }
         // 否则如果 note 是Hold
         else if (this.type === 3) {
+            if (this.r === -1){
+                ctx.rotate(180 * Math.PI / 180);
+                y = y * -1
+            }
             // 计算 hold 的 h
-            let d = (this.r * 0.6 * canvas.height * this.speed * this.holdTime) / 2;
+            let d = (0.6 * canvas.height * this.speed * this.holdTime) / 1.9;
             // 如果 timer >= Hold 打击时间，则绘制 hold 的尾巴
             if (timer >= this.time) {
                 y = 0;
-                d = this.r * 0.6 * canvas.height * this.speed * (this.time - timer) / 2 + this.r * (0.6 * canvas.height * this.speed * this.holdTime / 2);
-                ctx.drawImage(noteImg[6], this.x - 50, (y - (d * 1.9) - 5), 100, 100 / noteImg[6].width * noteImg[6].height);
+                d = 0.6 * canvas.height * this.speed * (this.time - timer) / 1.9 + (0.6 * canvas.height * this.speed * this.holdTime / 1.9);
+                ctx.drawImage(noteImg[6], this.x - 45, (y - (d * 1.9) - 5), 100, 100 / noteImg[6].width * noteImg[6].height);
             }
             // 如果 timer < Hold 打击时间，则绘制 hold 的头和尾巴
             else {
-                ctx.drawImage(noteImg[5], this.x - 50, y, 100, 100 / noteImg[5].width * noteImg[5].height);
-                ctx.drawImage(noteImg[6], this.x - 50, (y - (d * 1.9) - 5), 100, 100 / noteImg[6].width * noteImg[6].height);
+                ctx.drawImage(noteImg[5], this.x - 45, y, 100, 100 / noteImg[5].width * noteImg[5].height);
+                ctx.drawImage(noteImg[6], this.x - 45, (y - (d * 1.9) - 5), 100, 100 / noteImg[6].width * noteImg[6].height);
             }
             // 绘制 Hold 身
-            ctx.drawImage(noteImg[3], this.x - 50, y, 100, -d / noteImg[3].width * noteImg[3].height);
+            ctx.drawImage(noteImg[3], this.x - 45, y, 100, -d / noteImg[3].width * noteImg[3].height);
         }
         // 否则如果 note 是 Flick
         else if (this.type === 4) {
-            ctx.drawImage(noteImg[4], this.x - 50, y - 100 / noteImg[4].width * noteImg[4].height / 2, 100, 100 / noteImg[4].width * noteImg[4].height);
+            ctx.drawImage(noteImg[4], this.x - 45, y - 100 / noteImg[4].width * noteImg[4].height / 2, 100, 100 / noteImg[4].width * noteImg[4].height);
         }
         ctx.restore();
     }   
@@ -634,10 +644,23 @@ function drawShuiYin() {
 function notePretreatment(notes) {
     let notesList = notes
     notesList.sort((a, b) => a.time - b.time)
-    console.log(notesList)
+    const holdList = []
+    for (let i = 0; i < notesList.length; i++) {
+        if (notesList[i].type === 3) {
+            const hold = notesList[i]
+            notesList.splice(i, 1)
+            holdList.push(hold)
+            i--
+        }
+    }
+    for (let i = 0; i < holdList.length; i++) {
+        const hold = holdList[i]
+        notesList.splice(0, 0, hold)
+    }
     for (let i = 0; i < notesList.length; i++) {
         notesList[i].index = i
     }
+    console.log(notesList)
     return notesList
 }
 
