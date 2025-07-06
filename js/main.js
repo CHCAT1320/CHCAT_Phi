@@ -114,10 +114,11 @@ function hitImgInit() {
         // 将修改后的图像数据放回画布
         ctx.putImageData(imageData, 0, 0);
 
-        const frameWidth = 256;
-        const frameHeight = 256;
         const columns = 6;
         const rows = 5;
+        // 你这
+        const frameWidth = img.width / columns;
+        const frameHeight = img.height / rows;
         const totalFrames = columns * rows;
 
         // 创建一个小画布用于绘制单个帧
@@ -164,13 +165,19 @@ function hitImgInit() {
 }
 
 function applyGoldenEffect(data) {
-    const intensity = 2; // 金色强度保持不变
+    /* const intensity = 2; // 金色强度保持不变
     const brightnessFactor = 0.65; // 亮度因子，用于降低亮度
     for (let i = 0; i < data.length; i += 4) {
         const grayValue = data[i] * brightnessFactor; // 应用亮度因子
         data[i] = Math.min(255, grayValue + intensity * 100 * brightnessFactor);       // 红色增加
         data[i + 1] = Math.min(255, grayValue + intensity * 80 * brightnessFactor);    // 绿色增加
         data[i + 2] = Math.max(0, grayValue - intensity * 20 * brightnessFactor);      // 蓝色减少
+    } */
+    // 这啥东西啊
+    for (let i = 0; i < data.length; i += 4) {
+        data[i] = 255;
+        data[i + 1] = 236;
+        data[i + 2] = 160;
     }
 }
 // 调用打击特效切图
@@ -256,17 +263,18 @@ function bpmToTime(time, bpm) {
     return time * bpm / 1.875;
 }
 
+// 统一一下小驼峰谢谢喵
 /**
  * 线性插值
  * @param {number} s 
  * @param {number} e 
  * @param {number} sT 
  * @param {number} eT 
- * @param {number} NowTime 
+ * @param {number} nowTime 
  * @returns {number}
  */
-function linearInterpolation(s, e, sT, eT, NowTime) {
-    return s + (e - s) * ((NowTime - sT) / (eT - sT));
+function linearInterpolation(s, e, sT, eT, nowTime) {
+    return s + (e - s) * ((nowTime - sT) / (eT - sT));
 }
 
 // 判定线类
@@ -286,7 +294,7 @@ class lines {
         this.fp = 0;
     }
     // 查找并计算事件
-    findEvent(es, timer, skey, ekey) {
+    findEvent(es, timer, sKey, eKey) {
         let left = 0;
         let right = es.length - 1;
         let result = 0.0;
@@ -296,7 +304,7 @@ class lines {
             let currentEvent = es[mid];
 
             if (timer >= currentEvent.startTime && timer <= currentEvent.endTime) {
-                result = linearInterpolation(currentEvent[skey], currentEvent[ekey], currentEvent.startTime, currentEvent.endTime, timer);
+                result = linearInterpolation(currentEvent[sKey], currentEvent[eKey], currentEvent.startTime, currentEvent.endTime, timer);
                 break;
             } else if (timer < currentEvent.startTime) {
                 right = mid - 1;
@@ -312,6 +320,7 @@ class lines {
         timer = bpmToTime(timer, this.bpm);
         this.x = (this.findEvent(this.lineMoveEvent, timer, "start", "end") - 0.5) * canvas.width * size;
         this.y = -(this.findEvent(this.lineMoveEvent, timer, "start2", "end2") - 0.5) * canvas.height * size;
+        // 嗯嗯嗯嗯嗯嗯嗯还有实时转换
     }
     // 获取判定线旋转角度
     getLineR(timer) {
@@ -366,7 +375,7 @@ class lines {
     // 绘制判定线
     drawLine() {
         ctx.save();
-        ctx.strokeStyle = `rgba(255,255,170,${this.d})`;
+        ctx.strokeStyle = `rgba(254,255,169,${this.d})`;
         ctx.lineWidth = 5 * size;
         ctx.beginPath();
         ctx.translate(this.x, this.y);
@@ -436,9 +445,9 @@ class note {
             if(this.type !== 3) {
                 combo += 1;
                 score += 1000000 / noteI.length;
-            } else {  // 如果 Hold 的combo没有增加，且 timer >= Hold 结束时间 - 0.1，则combo++、score++
+            } else {  // 如果 Hold 的 combo 没有增加，且 timer >= Hold 结束时间 - 0.1，则 combo++、score++ /// 我不是跟你说了0.2吗。
                 if(this.isComboANDHold === false) {
-                    if (timer >= this.time + this.holdTime - 0.1) {
+                    if (timer >= this.time + this.holdTime - 0.2) {
                         // 将 Hold 标记为已经combo++过
                         this.isComboANDHold = true;
                         combo += 1;
@@ -453,15 +462,16 @@ class note {
             if (timer >= this.ht) {
                 hitI.push(new hit(this.ln, this.x, timer));
                 // 计算下一次打击特效生成时间
-                this.ht = timer + (60 / chart.judgeLineList[this.ln].bpm / 2);
-                if (this.isHoldHit === false) {
-                    // 使用 Web Audio API 播放音效
-                    if (this.type <= hitAudioBuffers.length) {
-                        playSound(hitAudioBuffers[this.type - 1]);
-                    }
-                    this.isHoldHit = true;
-                }
+                this.ht = timer + (30 / chart.judgeLineList[this.ln].bpm); // 和一位
             }
+            if (this.isHoldHit === false) {
+                // 使用 Web Audio API 播放音效
+                if (this.type <= hitAudioBuffers.length) {
+                    playSound(hitAudioBuffers[this.type - 1]);
+                }
+                this.isHoldHit = true;
+            }
+            // 我认为你应该放到外面
         }
         // 如果 timer >= note 打击时间 + 持续时间，则删除该 note
         if (timer >= this.time + this.holdTime) {
@@ -523,12 +533,12 @@ class hit {
     constructor(ln, offsetX, ht) {
         this.ln = ln;
         this.offsetX = offsetX; // hit 相对于 line 的 x 轴偏移量
-        this.y = linesI[ln].y - (256 / 3) * size + 10;
-        this.x = linesI[ln].x - (256 / 4) * size - 10;
+        this.y = linesI[ln].y - (256 / 4) * size + 10;
+        this.x = linesI[ln].x - (256 / 3) * size - 10;
         this.r = linesI[ln].r * Math.PI / 180;
         this.ht = ht;
-        // 随机生成 3 个 hit 的 block 初始角度
-        this.blockR = [Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180];
+        // 随机生成 3 个 hit 的 block 初始角度 / 是 4 个！！！！！！！！！！！！！！！！
+        this.blockR = [Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180];
         this.blockOffset = 0;
         this.blockD = 1;
         this.blockSize = 15 * size;
@@ -563,9 +573,9 @@ class hit {
         
         ctx.save();
         ctx.beginPath();
-        ctx.fillStyle = `rgba(255,255,135,${this.blockD})`;
-        // 绘制 3 个 block
-        for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = `rgba(255, 236, 160,${this.blockD})`;
+        // 绘制 3 个 block / 是 4 个！！！！！！！！！！！！！！！！
+        for (let i = 0; i < 5; i++) {
             const blockX = x + this.blockOffset * Math.cos(this.blockR[i]);
             const blockY = y + this.blockOffset * Math.sin(this.blockR[i]);
             ctx.fillRect(blockX, blockY, this.blockSize, this.blockSize);
@@ -582,13 +592,13 @@ function drawCombo() {
     if (combo <= 2) return;
     ctx.save();
     ctx.beginPath();
-    ctx.font = "32px Phigros";
+    ctx.font = "40px Phigros";
     ctx.fillStyle = "rgb(255,255,255)";
     const text = combo.toString();
     const textWidth = ctx.measureText(text).width;
-    ctx.fillText(combo, -textWidth / 2, -canvas.height / 2 + 35);
-    ctx.font = "24px Phigros";
-    const ComboText = comboText.toString();
+    ctx.fillText(combo, -textWidth / 2, -canvas.height / 2 + 45);
+    ctx.font = "12px Phigros";
+    const ComboText = comboText; // 你这不已经是string了
     const ComboTextWidth = ctx.measureText(ComboText).width;
     ctx.fillText(ComboText, -ComboTextWidth / 2, -canvas.height / 2 + 60);
     ctx.restore();
@@ -752,7 +762,14 @@ function update() {
     let timer = audio.currentTime;
     ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
     // 如果 bg 存在，则绘制背景
-    if (bg !== null && bg !== undefined) ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+    if (bg !== null && bg !== undefined) {
+        ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+        ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+        ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+        ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+        ctx.drawImage(bg, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+        // 绘制五次背景防止边缘透明度过低
+    }
     // 更新判定线
     for (let i = 0; i < linesI.length; i++) {
         linesI[i].getLineMove(timer);
