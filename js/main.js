@@ -370,7 +370,6 @@ class lines {
     }
 
     getNoteFp(time) {
-        console.log(time)
         for (let i = 0; i < this.speedEvent.length; i++) {
             if (this.speedEvent[i].endTime > time) {
                 return this.speedEvent[i].fp + ((time-this.speedEvent[i].startTime) * this.speedEvent[i].value)
