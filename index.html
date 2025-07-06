@@ -14,12 +14,17 @@
         <input type="file" onchange="readChart(this.files)">
         <input type="file" onchange="bgmFiles(this.files)">
         <input type="file" onchange="bgFiles(this.files)"><br>
-        <button onclick="start()">start</button><br>
+        <button id="fullScreenButton">全屏</button>
+        <button onclick="start()">start</button>
+        settings:<input type="text" id="settingInput">
+        <button onclick="getSetting()">set!</button><br>
         <!-- <button onclick="playEnd()">end</button><br> -->
         <canvas id="canvas"></canvas>
         <audio id="audio"></audio>
     </div>
     <script src="js/ease.js"></script>
+    <!-- <script src="js/rpe.js"></script> -->
     <script src="js/main.js"></script>
+    <script src="js/fullScreen.js"></script>
 </body>
 </html>

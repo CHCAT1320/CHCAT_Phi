@@ -1,3 +1,4 @@
+showPopup("请选择文件 <谱面> <音乐> <背景>", "info");
 // 获取 canvas 元素
 const canvas = document.getElementById("canvas");
 // 获取 canvas 上下文
@@ -39,6 +40,8 @@ pauseImg.src = "img/pause.png";
 var timerLineImg = new Image();
 timerLineImg.src = "img/timerLine.png";
 var speedEventSpeed = 1;
+var size = 1;
+var playSpeed = 1;
 
 // 创建音频上下文
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -149,26 +152,29 @@ function hitImgInit() {
         }
 
         console.log("所有帧已加载完成，总帧数：", hitImg.length);
+        showPopup("打击特效加载完成，总帧数：" + hitImg.length, "info");
     };
     
     img.onerror = function () {
         console.error("图像加载失败");
+        showPopup("图像加载失败", "error");
     };
     
     img.src = "img/hit.png";
 }
 
-// 金色效果函数
 function applyGoldenEffect(data) {
-    const intensity = 3; // 金色强度
+    const intensity = 2; // 金色强度保持不变
+    const brightnessFactor = 0.65; // 亮度因子，用于降低亮度
     for (let i = 0; i < data.length; i += 4) {
-        const grayValue = data[i]; // 红色通道作为亮度基准
-        data[i] = Math.min(255, grayValue + intensity * 100);       // 红色增加
-        data[i + 1] = Math.min(255, grayValue + intensity * 80);    // 绿色增加
-        data[i + 2] = Math.max(0, grayValue - intensity * 20);      // 蓝色减少
+        const grayValue = data[i] * brightnessFactor; // 应用亮度因子
+        data[i] = Math.min(255, grayValue + intensity * 100 * brightnessFactor);       // 红色增加
+        data[i + 1] = Math.min(255, grayValue + intensity * 80 * brightnessFactor);    // 绿色增加
+        data[i + 2] = Math.max(0, grayValue - intensity * 20 * brightnessFactor);      // 蓝色减少
     }
 }
 // 调用打击特效切图
+showPopup("正在加载打击特效，请稍候...", "info");
 hitImgInit();
 
 // 解析谱面
@@ -182,11 +188,14 @@ function readChart(files) {
             if ("formatVersion" in data) {
                 console.log("已知谱面格式formatVersion = " + data.formatVersion);
                 chart = data;
+                showPopup("已知谱面格式formatVersion = " + data.formatVersion, "info");
             } else {
                 console.error("未知谱面格式");
+                showPopup("未知谱面格式", "error");
             }
         } catch (error) {
             console.log(error);
+            showPopup(error, "error");
         }
     };
     reader.readAsText(file);
@@ -200,8 +209,10 @@ function bgmFiles(files) {
         try {
             console.log("音乐文件");
             audio.src = URL.createObjectURL(file);
+            showPopup("音乐加载成功", "info");
         } catch(error) {
             console.log(error);
+            showPopup(error, "error");
         }
     };
     reader.readAsText(file);
@@ -225,9 +236,11 @@ function bgFiles(files) {
                 bgCtx.filter = 'blur(10px) brightness(0.5)';
                 bgCtx.drawImage(bg, 0, 0, bg.width, bg.height, 0, 0, canvas.width, canvas.height);
                 bg = bgCvs;
+                showPopup("背景加载成功", "info");
             }
         } catch(error) {
             console.log(error);
+            showPopup(error, "error");
         }
     };
     reader.readAsText(file);
@@ -297,8 +310,8 @@ class lines {
     // 获取判定线坐标
     getLineMove(timer) {
         timer = bpmToTime(timer, this.bpm);
-        this.x = (this.findEvent(this.lineMoveEvent, timer, "start", "end") - 0.5) * canvas.width;
-        this.y = -(this.findEvent(this.lineMoveEvent, timer, "start2", "end2") - 0.5) * canvas.height;
+        this.x = (this.findEvent(this.lineMoveEvent, timer, "start", "end") - 0.5) * canvas.width * size;
+        this.y = -(this.findEvent(this.lineMoveEvent, timer, "start2", "end2") - 0.5) * canvas.height * size;
     }
     // 获取判定线旋转角度
     getLineR(timer) {
@@ -354,7 +367,7 @@ class lines {
     drawLine() {
         ctx.save();
         ctx.strokeStyle = `rgba(255,255,170,${this.d})`;
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 5 * size;
         ctx.beginPath();
         ctx.translate(this.x, this.y);
         
@@ -362,12 +375,14 @@ class lines {
         ctx.moveTo(-1080,0);
         ctx.lineTo(1080,0);
         ctx.stroke();
-        ctx.fillStyle = "rgba(0,0,0)";
-        ctx.font = "24px serif";
-        let text = this.lineNumber.toString();
-        let textWidth = ctx.measureText(text).width;
-        ctx.translate(-textWidth / 2, 0);
-        //ctx.fillText(text, 0, 0);
+        if (size !== 1){
+            ctx.fillStyle = "rgb(255, 255, 255)";
+            ctx.font = `${24 * size}px Phigros`;
+            let text = this.lineNumber.toString();
+            let textWidth = ctx.measureText(text).width;
+            ctx.translate(-textWidth / 2, 0);
+            ctx.fillText(text, 0, 0);
+        }
         ctx.restore();
     }
 }
@@ -381,7 +396,7 @@ class note {
         this.type = info.type;
         this.time = info.time / chart.judgeLineList[ln].bpm * 1.875;
         this.holdTime = info.holdTime / chart.judgeLineList[ln].bpm * 1.875;
-        this.x = (info.positionX * 0.05625 * canvas.width)-5;
+        this.x = (info.positionX * 0.05625 * canvas.width) * size;
         this.r = r;
         this.fp = info.floorPosition;
         this.speed = info.speed * speedEventSpeed;
@@ -392,10 +407,18 @@ class note {
     // 绘制note
     drawNote(timer) {
         // 计算 note 的y坐标
-        let y = this.r * -(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height * speedEventSpeed;
-        if (Math.abs(y) > 1620){
-            if (this.time - timer > 5){
-                return;
+        let y = this.r * -(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height * speedEventSpeed * size;
+        if (size === 1){
+            if (Math.abs(y) > 720){
+                if (this.time - timer > 5){
+                    return;
+                }
+            }
+        }else{
+            if (Math.abs(y) > 1620){
+                if (this.time - timer > 5){
+                    return;
+                }
             }
         }
         // 如果 timer >= 打击时间，且 note 类型不是 Hold，则播放打击特效
@@ -459,11 +482,11 @@ class note {
 
         // 如果 note 是Tap
         if (this.type === 1) {
-            ctx.drawImage(noteImg[1], this.x - 45, y - 100 / noteImg[1].width * noteImg[1].height / 2, 100, 100 / noteImg[1].width * noteImg[1].height);
+            ctx.drawImage(noteImg[1], this.x - 50 * size, y - 100 / noteImg[1].width * noteImg[1].height * size / 2, 100 * size, 100 / noteImg[1].width * size * noteImg[1].height);
         }
         // 否则如果 note 是Drag
         else if (this.type === 2) {
-            ctx.drawImage(noteImg[2], this.x - 45, y - 100 / noteImg[2].width * noteImg[2].height / 2, 100, 100 / noteImg[2].width * noteImg[2].height);
+            ctx.drawImage(noteImg[2], this.x - 50 * size, y - 100 / noteImg[2].width  * noteImg[2].height * size / 2, 100 * size, 100 / noteImg[2].width * size * noteImg[2].height);
         }
         // 否则如果 note 是Hold
         else if (this.type === 3) {
@@ -477,19 +500,19 @@ class note {
             if (timer >= this.time) {
                 y = 0;
                 d = 0.6 * canvas.height * this.speed * (this.time - timer) / 1.9 + (0.6 * canvas.height * this.speed * this.holdTime / 1.9);
-                ctx.drawImage(noteImg[6], this.x - 45, (y - (d * 1.9) - 5), 100, 100 / noteImg[6].width * noteImg[6].height);
+                ctx.drawImage(noteImg[6], this.x - 50 * size, (y - (d * 1.9) - 5) * size, 100 * size, 100 / noteImg[6].width * size * noteImg[6].height);
             }
             // 如果 timer < Hold 打击时间，则绘制 hold 的头和尾巴
             else {
-                ctx.drawImage(noteImg[5], this.x - 45, y, 100, 100 / noteImg[5].width * noteImg[5].height);
-                ctx.drawImage(noteImg[6], this.x - 45, (y - (d * 1.9) - 5), 100, 100 / noteImg[6].width * noteImg[6].height);
+                ctx.drawImage(noteImg[5], this.x - 50 * size, y, 100 * size, 100 / noteImg[5].width * size * noteImg[5].height);
+                ctx.drawImage(noteImg[6], this.x - 50 * size, (y - (d * size * 1.9) - 5 * size), 100 * size, 100 / noteImg[6].width * size * noteImg[6].height);
             }
             // 绘制 Hold 身
-            ctx.drawImage(noteImg[3], this.x - 45, y, 100, -d / noteImg[3].width * noteImg[3].height);
+            ctx.drawImage(noteImg[3], this.x - 50 * size, y, 100 * size, -d / noteImg[3].width * size * noteImg[3].height);
         }
         // 否则如果 note 是 Flick
         else if (this.type === 4) {
-            ctx.drawImage(noteImg[4], this.x - 45, y - 100 / noteImg[4].width * noteImg[4].height / 2, 100, 100 / noteImg[4].width * noteImg[4].height);
+            ctx.drawImage(noteImg[4], this.x - 50 * size, y - 100 / noteImg[4].width * noteImg[4].height * size / 2, 100 * size, 100 / noteImg[4].width * size * noteImg[4].height);
         }
         ctx.restore();
     }   
@@ -500,15 +523,15 @@ class hit {
     constructor(ln, offsetX, ht) {
         this.ln = ln;
         this.offsetX = offsetX; // hit 相对于 line 的 x 轴偏移量
-        this.y = linesI[ln].y - (256 / 3) + 5;
-        this.x = linesI[ln].x - (256 / 4) - 5;
+        this.y = linesI[ln].y - (256 / 3) * size + 10;
+        this.x = linesI[ln].x - (256 / 4) * size - 10;
         this.r = linesI[ln].r * Math.PI / 180;
         this.ht = ht;
         // 随机生成 3 个 hit 的 block 初始角度
         this.blockR = [Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180, Math.random() * 360 * Math.PI / 180];
         this.blockOffset = 0;
         this.blockD = 1;
-        this.blockSize = 15;
+        this.blockSize = 15 * size;
     }
     drawHit(timer) {
         // 如果 timer < hit 生成时间 + 0.5，则不绘制 hit
@@ -523,20 +546,20 @@ class hit {
             hitImg[Math.floor(30 * ((timer - this.ht) / 0.5))],
             hitX,
             hitY,
-            256 / 1.7,
-            256 / 1.7
+            (256 / 1.7) * size,
+            (256 / 1.7) * size
         );
         ctx.restore();
         // 绘制 hit 的 block
-        this.drawBlock(timer, hitX + (256 / 4), hitY + (256 / 3));
+        this.drawBlock(timer, hitX + (256 / 4) * size, hitY + (256 / 3) * size);
     }
     drawBlock(timer, x, y) {
         // 如果 timer < hit 生成时间 + 0.5，则不绘制 block
         if (timer >= this.ht + 0.5) return;
         // 缓动库计算 block 的偏移、透明度、大小
-        this.blockOffset = easeFuncs[7]((timer - this.ht) / 0.5) * 100;
+        this.blockOffset = easeFuncs[7]((timer - this.ht) / 0.5) * 120 * size;
         this.blockD = 1 - easeFuncs[8]((timer - this.ht) / 0.5);
-        this.blockSize = 15 * 1 - easeFuncs[11]((timer - this.ht) / 0.5);
+        this.blockSize = 15 * size * 1 - easeFuncs[11]((timer - this.ht) / 0.5);
         
         ctx.save();
         ctx.beginPath();
@@ -664,11 +687,30 @@ function notePretreatment(notes) {
     return notesList
 }
 
+function drawScreenBroad(){
+    if (size === 1) return
+    ctx.save()
+    ctx.beginPath()
+    ctx.strokeStyle = "rgb(255, 0, 0)"
+    ctx.strokeRect(-canvas.width * size / 2, -canvas.height * size / 2, canvas.width * size, canvas.height * size)
+    ctx.restore()
+}
+
  /**
  * 开始播放谱面
  * @returns {any}
  */
 function start() {
+    showPopup("加载中...", "info")
+    //console.log(chart)
+    if (chart === null || chart === undefined){
+        showPopup("请先导入谱面", "error")
+        return;
+    }
+    if (audio.src === ""){
+        showPopup("请先导入音频", "error")
+        return;
+    }
     // 创建判定线
     for (let i = 0; i < chart.judgeLineList.length; i++) {
         linesI.push(new lines(i));
@@ -693,20 +735,17 @@ function start() {
     preloadSounds()
         .then(sounds => {
             hitAudioBuffers = sounds;
+            showPopup("加载完成开始播放", "info")
             audio.play();
-            cilick();
             requestAnimationFrame(update);
         })
         .catch(error => {
             console.error('音效加载失败:', error);
+            showPopup("音效加载失败将忽略音效直接播放", "error");
             // 如果音效加载失败，仍然尝试启动游戏
             audio.play();
-            cilick();
             requestAnimationFrame(update);
         });
-}
-
-function cilick() {
 }
 
 function update() {
@@ -741,6 +780,7 @@ function update() {
     drawPause();
     drawTimerLine(timer);
     drawShuiYin();
+    drawScreenBroad()
 
     // 更新 FPS
     const now = performance.now();
@@ -758,3 +798,117 @@ function update() {
 //     ctx.arc(e.clientX, e.clientY, 10, 0, 2 * Math.PI);
 //     ctx.fill();
 // });
+
+function getSetting() {
+    const settingInpurt = document.getElementById('settingInput')
+    const settingValue = settingInpurt.value
+    const setting = settingValue.split('=')
+    console.log(setting)
+    if (setting[0] === "size"){
+        if (audio.currentTime > 0) {
+            showPopup("请在游戏未开始时设置size属性", "error")
+            return;
+        }
+        if (setting[1] === "") {
+            showPopup("size属性不能为空", "error")
+            return;
+        }
+        size = parseFloat(setting[1])
+        showPopup("size属性设置为" + size, "info")
+    }
+    else if (setting[0] === "speedEventSpeed"){
+        if (setting[1] === ""){
+            showPopup("speedEventSpeed属性不能为空", "error")
+            return;
+        }
+        speedEventSpeed = parseFloat(setting[1])
+        showPopup("speedEventSpeed属性设置为" + speedEventSpeed, "info")
+    }
+    else if (setting[0] === "comboText"){
+        if (setting[1] === ""){
+            showPopup("comboText属性不能为空", "error")
+            return;
+        }
+        comboText = setting[1]
+        showPopup("comboText属性设置为" + comboText, "info")
+    }
+    else if (setting[0] === "playSpeed"){
+        if (setting[1] === ""){
+            showPopup("playSpeed属性不能为空", "error")
+            return;
+        }
+        playSpeed = parseFloat(setting[1])
+        audio.playbackRate = playSpeed
+        showPopup("playSpeed属性设置为" + playSpeed, "info")
+    }
+    else {
+        console.log("设置错误")
+        showPopup("设置内容不符合规范，格式应为：settingName=settingValue", "error")
+    }
+}
+
+function showPopup(e, type) {
+    const popup = document.createElement("div");
+    popup.classList.add("popup");
+    popup.style.position = "absolute";
+    popup.style.top = "15px";
+    popup.style.left = "0";
+    popup.style.width = "500px";
+    popup.style.height = "auto";
+    if (type === "error") {
+        popup.style.backgroundColor = "rgb(255, 0, 0)";
+        popup.innerText = "发生错误：" + e;
+    } else if (type === "info") {
+        popup.style.backgroundColor = "rgb(0, 162, 255)";
+        popup.innerText = e;
+    }
+    popup.style.color = "white";
+    popup.style.padding = "10px";
+    popup.style.borderRadius = "5px";
+    popup.style.textAlign = "center";
+    // 计算 y 偏移量
+    let yOffset = 0;
+    const popups = Array.from(document.getElementsByClassName("popup"));
+    for (let i = 0; i < popups.length; i++) {
+        const popupi = popups[i];
+        if (popupi.parentNode === document.body) {
+            yOffset += popupi.offsetHeight + 15;
+        }
+    }
+    popup.style.top = `${yOffset}px`;
+    document.body.appendChild(popup);
+
+    function animation(t) {
+        if (t >= 270) {
+            document.body.removeChild(popup);
+            updatePopupsYPosition();
+            return;
+        }
+        if (t < 100) {
+            const windowWidth = window.innerWidth;
+            const width = popup.offsetWidth;
+            const offset = windowWidth - (width * easeFuncs[9](t / 100)) - 15;
+            popup.style.left = `${offset}px`;
+            popup.style.opacity = easeFuncs[9](t / 100);
+        }
+        if (t >= 100) {
+            const d = easeFuncs[9]((t - 200) / 100);
+            popup.style.opacity = 1 - d;
+        }
+        requestAnimationFrame(() => animation(t + 1.5));
+    }
+
+    requestAnimationFrame(() => animation(0));
+
+    function updatePopupsYPosition() {
+        const popups = Array.from(document.getElementsByClassName("popup"));
+        let yOffset = 0;
+        for (let i = 0; i < popups.length; i++) {
+            const popupi = popups[i];
+            if (popupi.parentNode === document.body) {
+                popupi.style.top = `${yOffset}px`;
+                yOffset += popupi.offsetHeight + 15;
+            }
+        }
+    }
+}
