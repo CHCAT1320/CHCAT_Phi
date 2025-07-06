@@ -368,6 +368,16 @@ class lines {
 
         return result;
     }
+
+    getNoteFp(time) {
+        for (let i = 0; i < this.speedEvent.length; i++) {
+            if (this.speedEvent[i].endTime > time) {
+                return this.speedEvent[i].fp + ((time-this.speedEvent[i].startTime) * this.speedEvent[i].value)
+            }
+        }
+        return 0
+    }
+
     // 获取判定线Fp
     getLineFp(timer) {
         this.fp = this.findSpeedEvent(this.speedEvent, timer);
@@ -407,7 +417,7 @@ class note {
         this.holdTime = info.holdTime / chart.judgeLineList[ln].bpm * 1.875;
         this.x = (info.positionX * 0.05625 * canvas.width) * size;
         this.r = r;
-        this.fp = info.floorPosition;
+        this.fp = linesI[this.ln].getNoteFp(this.time);
         this.speed = info.speed * speedEventSpeed;
         this.ht = this.time;
         this.isComboANDHold = false;
@@ -533,8 +543,9 @@ class hit {
     constructor(ln, offsetX, ht) {
         this.ln = ln;
         this.offsetX = offsetX; // hit 相对于 line 的 x 轴偏移量
-        this.y = linesI[ln].y - (256 / 4) * size + 10;
-        this.x = linesI[ln].x - (256 / 3) * size - 10;
+        this.y = linesI[ln].y - (256 / 3) * size + 10;
+        this.x = linesI[ln].x - (256 / 4) * size - 10;
+        // 哎呀，上次不小心写反了
         this.r = linesI[ln].r * Math.PI / 180;
         this.ht = ht;
         // 随机生成 3 个 hit 的 block 初始角度 / 是 4 个！！！！！！！！！！！！！！！！
