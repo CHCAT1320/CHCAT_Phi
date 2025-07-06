@@ -410,13 +410,13 @@ class note {
         let y = this.r * -(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height * speedEventSpeed * size;
         if (size === 1){
             if (Math.abs(y) > 720){
-                if (this.time - timer > 5){
+                if (this.time - timer > 0){
                     return;
                 }
             }
         }else{
             if (Math.abs(y) > 1620){
-                if (this.time - timer > 5){
+                if (this.time - timer > 0){
                     return;
                 }
             }
