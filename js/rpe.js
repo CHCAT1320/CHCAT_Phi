@@ -619,10 +619,10 @@ class notes{
         if (timer > this.startTime && timer > this.endTime){
             if (this.isFake === 0){
                 if (this.type !== 2) hitI.push(new hit(this.ln, this.positionX, this.startTime)), score += (1000000 / noteCount), combo ++;
-                // if (this.type !== 2) playSound(hitAudioBuffers[this.type - 1]);
-                const type = Math.floor(Math.random() * 12)
+                if (this.type !== 2) playSound(hitAudioBuffers[this.type - 1]);
+                // const type = Math.floor(Math.random() * 12)
                 // console.log(type)
-                if (this.type !== 2) playSound(hitAudioBuffers[type]);
+                // if (this.type !== 2) playSound(hitAudioBuffers[type]);
             }
 
             noteI[this.index] = null;
