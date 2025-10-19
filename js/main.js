@@ -116,7 +116,7 @@ function hitImgInit() {
 
         const columns = 6;
         const rows = 5;
-        // 你这
+        // 你这-bychuhan
         const frameWidth = img.width / columns;
         const frameHeight = img.height / rows;
         const totalFrames = columns * rows;
@@ -173,7 +173,7 @@ function applyGoldenEffect(data) {
         data[i + 1] = Math.min(255, grayValue + intensity * 80 * brightnessFactor);    // 绿色增加
         data[i + 2] = Math.max(0, grayValue - intensity * 20 * brightnessFactor);      // 蓝色减少
     } */
-    // 这啥东西啊
+    // 这啥东西啊 -bychuhan
     for (let i = 0; i < data.length; i += 4) {
         data[i] = 255;
         data[i + 1] = 236;
@@ -369,14 +369,14 @@ class lines {
         return result;
     }
 
-    getNoteFp(time) {
-        for (let i = 0; i < this.speedEvent.length; i++) {
-            if (this.speedEvent[i].endTime > time) {
-                return this.speedEvent[i].fp + ((time-this.speedEvent[i].startTime) * this.speedEvent[i].value)
-            }
-        }
-        return 0
-    }
+    // getNoteFp(time) {
+    //     for (let i = 0; i < this.speedEvent.length; i++) {
+    //         if (this.speedEvent[i].endTime > time) {
+    //             return this.speedEvent[i].fp + ((time-this.speedEvent[i].startTime) * this.speedEvent[i].value)
+    //         }
+    //     }
+    //     return 0
+    // }
 
     // 获取判定线Fp
     getLineFp(timer) {
@@ -417,7 +417,8 @@ class note {
         this.holdTime = info.holdTime / chart.judgeLineList[ln].bpm * 1.875;
         this.x = (info.positionX * 0.05625 * canvas.width) * size;
         this.r = r;
-        this.fp = linesI[this.ln].getNoteFp(this.time);
+        this.fp = linesI[this.ln].findSpeedEvent(linesI[this.ln].speedEvent, this.time);
+        console.log(this.fp);
         this.speed = info.speed * speedEventSpeed;
         this.ht = this.time;
         this.isComboANDHold = false;
@@ -428,11 +429,17 @@ class note {
         // 计算 note 的y坐标
         let y = this.r * -(this.fp - linesI[this.ln].fp) * 0.6 * canvas.height * speedEventSpeed * size;
         if (size === 1){
-            if (Math.abs(y) > 720){
+            if (Math.abs(y) > 540){
                 if (this.time - timer > 0){
                     return;
                 }
             }
+            // if (linesI[this.ln].y + y > 640 || linesI[this.ln].y + y < -640){
+            //     return;
+            // }
+            // if (linesI[this.ln].x + this.x > 820 || linesI[this.ln].x + this.x < -820){
+            //     return;
+            // }
         }else{
             if (Math.abs(y) > 1620){
                 if (this.time - timer > 0){
@@ -440,6 +447,7 @@ class note {
                 }
             }
         }
+
         // 如果 timer >= 打击时间，且 note 类型不是 Hold，则播放打击特效
         if (timer >= this.time) {
             if(this.type !== 3) {
@@ -488,7 +496,7 @@ class note {
             noteI[this.index] = null;
             return;
         }
-        if (this.fp - linesI[this.ln].fp < -0.001){
+        if (this.fp - linesI[this.ln].fp < -0.003){
             if (this.type !== 3) return;
             else if (this.isHoldHit === false) return;
         }
@@ -543,8 +551,8 @@ class hit {
     constructor(ln, offsetX, ht) {
         this.ln = ln;
         this.offsetX = offsetX; // hit 相对于 line 的 x 轴偏移量
-        this.y = linesI[ln].y - (256 / 3) * size + 10;
-        this.x = linesI[ln].x - (256 / 4) * size - 10;
+        this.y = linesI[ln].y - ((256 / 3) * size) + (10 * size);
+        this.x = linesI[ln].x - ((256 / 4) * size) - (10 * size);
         // 哎呀，上次不小心写反了
         this.r = linesI[ln].r * Math.PI / 180;
         this.ht = ht;
@@ -684,6 +692,7 @@ function drawShuiYin() {
     ctx.fillText(shuiYin, canvas.width / 2 - textWidth - 10, canvas.height / 2 - 5);
     ctx.restore();
 }
+drawShuiYin();
 
 function notePretreatment(notes) {
     let notesList = notes
@@ -875,68 +884,4 @@ function getSetting() {
     }
 }
 
-function showPopup(e, type) {
-    const popup = document.createElement("div");
-    popup.classList.add("popup");
-    popup.style.position = "absolute";
-    popup.style.top = "15px";
-    popup.style.left = "0";
-    popup.style.width = "500px";
-    popup.style.height = "auto";
-    if (type === "error") {
-        popup.style.backgroundColor = "rgb(255, 0, 0)";
-        popup.innerText = "发生错误：" + e;
-    } else if (type === "info") {
-        popup.style.backgroundColor = "rgb(0, 162, 255)";
-        popup.innerText = e;
-    }
-    popup.style.color = "white";
-    popup.style.padding = "10px";
-    popup.style.borderRadius = "5px";
-    popup.style.textAlign = "center";
-    // 计算 y 偏移量
-    let yOffset = 0;
-    const popups = Array.from(document.getElementsByClassName("popup"));
-    for (let i = 0; i < popups.length; i++) {
-        const popupi = popups[i];
-        if (popupi.parentNode === document.body) {
-            yOffset += popupi.offsetHeight + 15;
-        }
-    }
-    popup.style.top = `${yOffset}px`;
-    document.body.appendChild(popup);
 
-    function animation(t) {
-        if (t >= 270) {
-            document.body.removeChild(popup);
-            updatePopupsYPosition();
-            return;
-        }
-        if (t < 100) {
-            const windowWidth = window.innerWidth;
-            const width = popup.offsetWidth;
-            const offset = windowWidth - (width * easeFuncs[9](t / 100)) - 15;
-            popup.style.left = `${offset}px`;
-            popup.style.opacity = easeFuncs[9](t / 100);
-        }
-        if (t >= 100) {
-            const d = easeFuncs[9]((t - 200) / 100);
-            popup.style.opacity = 1 - d;
-        }
-        requestAnimationFrame(() => animation(t + 1.5));
-    }
-
-    requestAnimationFrame(() => animation(0));
-
-    function updatePopupsYPosition() {
-        const popups = Array.from(document.getElementsByClassName("popup"));
-        let yOffset = 0;
-        for (let i = 0; i < popups.length; i++) {
-            const popupi = popups[i];
-            if (popupi.parentNode === document.body) {
-                popupi.style.top = `${yOffset}px`;
-                yOffset += popupi.offsetHeight + 15;
-            }
-        }
-    }
-}

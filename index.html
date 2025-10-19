@@ -11,6 +11,7 @@
     <div id="body">
         <h1>CHPhiPlayer</h1>
         <div id="fps"></div>
+        <div id="recorder"></div>
         <input type="file" onchange="readChart(this.files)">
         <input type="file" onchange="bgmFiles(this.files)">
         <input type="file" onchange="bgFiles(this.files)"><br>
@@ -20,11 +21,14 @@
         <button onclick="getSetting()">set!</button><br>
         <!-- <button onclick="playEnd()">end</button><br> -->
         <canvas id="canvas"></canvas>
-        <audio id="audio"></audio>
+        <!-- <audio id="audio" controls></audio> -->
+        <audio id="audio" controls></audio>
     </div>
     <script src="js/ease.js"></script>
-    <!-- <script src="js/rpe.js"></script> -->
-    <script src="js/main.js"></script>
+    <script src="js/popup.js"></script>
+    <!-- <script src="js/hit2bgm.js"></script> -->
+    <script src="js/rpe.js"></script>
+    <!-- <script src="js/main.js"></script> -->
     <script src="js/fullScreen.js"></script>
 </body>
 </html>
