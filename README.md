@@ -6,14 +6,12 @@
 
 ## 支持的格式
 
-目前仅支持Phigros的官方谱面格式（`formatVersion: 3`）
-
 支持列表：
 
 - [ ]  formatVersion: 1
 - [ ]  formatVersion: 2
 - [X]  formatVersion: 3
-- [ ]  RE:PhiEdit (`RPE`)
+- [X]  RE:PhiEdit (`RPE`)
 - [ ]  PhiEdit Chart (`PEC`)
 
 ## Bug 反馈
